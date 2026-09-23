@@ -17,6 +17,7 @@ import {
   Menu,
   X,
   Sparkles,
+  Trash2,
 } from "lucide-react";
 import { useState } from "react";
 
@@ -93,8 +94,28 @@ export function Navbar() {
                 </span>
               </div>
               <button
+                onClick={async () => {
+                  if (confirm("Delete all sample and test data? Your real custom uploads will not be affected.")) {
+                    try {
+                      const res = await fetch("/api/admin/clean-test-data", { method: "POST" });
+                      if (res.ok) {
+                        alert("All sample test data deleted!");
+                        window.location.reload();
+                      }
+                    } catch (e) {
+                      console.error(e);
+                    }
+                  }
+                }}
+                className="p-1 rounded-lg text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/50 transition-colors ml-1"
+                title="Wipe all test & sample data"
+                aria-label="Clear Test Data"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+              </button>
+              <button
                 onClick={() => logout()}
-                className="p-1 rounded-lg text-emerald-600 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/50 transition-colors ml-1"
+                className="p-1 rounded-lg text-emerald-600 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/50 transition-colors"
                 title="Lock / Exit Admin Mode"
                 aria-label="Exit Admin"
               >
