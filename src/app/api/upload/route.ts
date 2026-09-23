@@ -50,8 +50,8 @@ export async function POST(req: NextRequest) {
         mimeType: file.type || "application/octet-stream",
       },
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error("Upload error:", error);
-    return NextResponse.json({ error: "File upload failed" }, { status: 500 });
+    return NextResponse.json({ error: error?.message || "File upload failed" }, { status: 500 });
   }
 }

@@ -5,9 +5,16 @@ declare global {
   var prisma: PrismaClient | undefined;
 }
 
+const databaseUrl = process.env.DATABASE_URL || "file:./dev.db";
+
 export const db =
   global.prisma ||
   new PrismaClient({
+    datasources: {
+      db: {
+        url: databaseUrl,
+      },
+    },
     log: process.env.NODE_ENV === "development" ? ["warn", "error"] : ["error"],
   });
 

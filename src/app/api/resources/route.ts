@@ -112,8 +112,11 @@ export async function POST(req: NextRequest) {
     });
 
     return NextResponse.json({ resource: newResource }, { status: 201 });
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error creating resource:", error);
-    return NextResponse.json({ error: "Failed to create resource" }, { status: 500 });
+    return NextResponse.json(
+      { error: error?.message || "Failed to create resource" },
+      { status: 500 }
+    );
   }
 }
