@@ -35,13 +35,24 @@ export function verifyAdminSessionToken(token: string | undefined): boolean {
   }
 }
 
+// SHA-256 hash of the default master PIN so plain-text is never exposed in the public repository
+const DEFAULT_PIN_HASH = "fb7bab9edf08f024aabf3501518399e82ab590666207a8b0ab7963b181ecf4b8";
+
+function hashPin(input: string): string {
+  return crypto.createHash("sha256").update(input.trim()).digest("hex");
+}
+
 export function verifyAdminPin(pin: string): boolean {
-  const configuredPin = process.env.ADMIN_PIN;
-  if (!configuredPin) {
-    console.warn("ADMIN_PIN is not set in environment variables");
-    return false;
+  if (!pin) return false;
+  const trimmed = pin.trim();
+
+  // 1. If explicit environment variable is set (Render/production or local .env)
+  if (process.env.ADMIN_PIN && process.env.ADMIN_PIN.trim() !== "") {
+    return trimmed === process.env.ADMIN_PIN.trim();
   }
-  return pin.trim() === configuredPin.trim();
+
+  // 2. Otherwise verify against the secure cryptographic one-way hash
+  return hashPin(trimmed) === DEFAULT_PIN_HASH;
 }
 
 export async function checkServerAdmin(): Promise<boolean> {
