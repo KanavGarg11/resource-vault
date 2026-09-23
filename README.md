@@ -36,7 +36,7 @@ npm install
 Copy `.env.example` to `.env` if not already present:
 ```env
 DATABASE_URL="file:./dev.db"
-ADMIN_PIN="1106"
+ADMIN_PIN="your_secret_pin_here"
 ADMIN_SESSION_SECRET="your-secret-key-student-hub-2026"
 ```
 > Change `ADMIN_PIN` to whatever numeric code or password you prefer for your phone.

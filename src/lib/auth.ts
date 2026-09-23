@@ -3,8 +3,7 @@ import crypto from "crypto";
 import { NextRequest } from "next/server";
 
 const COOKIE_NAME = "vault_admin_session";
-const SECRET = process.env.ADMIN_SESSION_SECRET || "default-vault-admin-secret-2026";
-const ADMIN_PIN = process.env.ADMIN_PIN || "1106";
+const SECRET = process.env.ADMIN_SESSION_SECRET || "vault-secure-session-key";
 
 function createSignature(payload: string): string {
   return crypto.createHmac("sha256", SECRET).update(payload).digest("hex");
@@ -37,8 +36,12 @@ export function verifyAdminSessionToken(token: string | undefined): boolean {
 }
 
 export function verifyAdminPin(pin: string): boolean {
-  const currentPin = process.env.ADMIN_PIN || "1106";
-  return pin.trim() === currentPin.trim();
+  const configuredPin = process.env.ADMIN_PIN;
+  if (!configuredPin) {
+    console.warn("ADMIN_PIN is not set in environment variables");
+    return false;
+  }
+  return pin.trim() === configuredPin.trim();
 }
 
 export async function checkServerAdmin(): Promise<boolean> {
