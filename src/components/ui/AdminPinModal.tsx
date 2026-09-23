@@ -92,7 +92,7 @@ export function AdminPinModal() {
                   setPin(e.target.value);
                   setError(null);
                 }}
-                placeholder="Enter PIN (Default: 1234)"
+                placeholder="Enter PIN"
                 autoFocus
                 className="w-full text-center tracking-[0.3em] font-mono text-lg py-2.5 px-4 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all placeholder:tracking-normal placeholder:font-sans placeholder:text-sm placeholder:text-slate-400"
               />

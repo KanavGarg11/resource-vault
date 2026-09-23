@@ -4,7 +4,7 @@ import { NextRequest } from "next/server";
 
 const COOKIE_NAME = "vault_admin_session";
 const SECRET = process.env.ADMIN_SESSION_SECRET || "default-vault-admin-secret-2026";
-const ADMIN_PIN = process.env.ADMIN_PIN || "1234";
+const ADMIN_PIN = process.env.ADMIN_PIN || "1106";
 
 function createSignature(payload: string): string {
   return crypto.createHmac("sha256", SECRET).update(payload).digest("hex");
@@ -37,7 +37,8 @@ export function verifyAdminSessionToken(token: string | undefined): boolean {
 }
 
 export function verifyAdminPin(pin: string): boolean {
-  return pin.trim() === ADMIN_PIN.trim();
+  const currentPin = process.env.ADMIN_PIN || "1106";
+  return pin.trim() === currentPin.trim();
 }
 
 export async function checkServerAdmin(): Promise<boolean> {
