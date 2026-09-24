@@ -391,138 +391,162 @@ export function TodayScheduleWidget() {
         })}
       </div>
 
-      {/* Schedule Items List */}
-      <div className="space-y-2 max-h-[320px] overflow-y-auto pr-1">
+      {/* Horizontal Left-to-Right Schedule Strip */}
+      <div className="flex items-stretch gap-3 overflow-x-auto pb-2 pt-0.5 scrollbar-thin">
         {loading ? (
-          <div className="py-8 text-center text-xs text-slate-400 flex items-center justify-center gap-2">
+          <div className="py-6 w-full text-center text-xs text-slate-400 flex items-center justify-center gap-2">
             <Loader2 className="w-4 h-4 animate-spin text-indigo-500" />
             <span>Loading classes...</span>
           </div>
         ) : entries.length === 0 ? (
-          <div className="py-8 text-center bg-slate-50 dark:bg-slate-800/40 rounded-2xl border border-dashed border-slate-200 dark:border-slate-800 space-y-3 p-4">
-            <Calendar className="w-6 h-6 mx-auto text-slate-400" />
-            <p className="text-xs text-slate-500">
-              No scheduled classes for <strong>{activeDay}</strong>.
-            </p>
+          <div className="py-3.5 px-4 w-full text-center bg-slate-50 dark:bg-slate-800/40 rounded-2xl border border-dashed border-slate-200 dark:border-slate-800 flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2 text-xs text-slate-500">
+              <Calendar className="w-4 h-4 text-slate-400 shrink-0" />
+              <span>No scheduled classes for <strong>{activeDay}</strong>.</span>
+            </div>
             {isAdmin ? (
               <button
                 type="button"
                 onClick={() => handleOpenAddModal(activeDay)}
-                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-sm transition-all active:scale-95"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-sm transition-all shrink-0 active:scale-95"
               >
                 <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
-                <span>+ Add Class for {activeDay}</span>
+                <span>+ Add Class</span>
               </button>
             ) : (
               <button
                 type="button"
                 onClick={openPinModal}
-                className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline font-semibold"
+                className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline font-semibold shrink-0"
               >
-                Enter Admin PIN to set classes
+                Admin PIN to set
               </button>
             )}
           </div>
         ) : (
-          entries.map((item) => {
-            const startMin = parseTimeToMinutes(item.startTime);
-            const endMin = parseTimeToMinutes(item.endTime);
-            const isItemLive =
-              isViewingToday &&
-              startMin !== null &&
-              endMin !== null &&
-              currentMinutes >= startMin &&
-              currentMinutes < endMin;
-            const isItemPast =
-              isViewingToday && endMin !== null && currentMinutes >= endMin;
+          [...entries]
+            .sort((a, b) => {
+              const minA = parseTimeToMinutes(a.startTime) ?? 0;
+              const minB = parseTimeToMinutes(b.startTime) ?? 0;
+              return minA - minB;
+            })
+            .map((item) => {
+              const startMin = parseTimeToMinutes(item.startTime);
+              const endMin = parseTimeToMinutes(item.endTime);
+              const isItemLive =
+                isViewingToday &&
+                startMin !== null &&
+                endMin !== null &&
+                currentMinutes >= startMin &&
+                currentMinutes < endMin;
+              const isItemPast =
+                isViewingToday && endMin !== null && currentMinutes >= endMin;
 
-            return (
-              <div
-                key={item.id}
-                className={`group flex items-start justify-between p-3 rounded-2xl transition-all ${
-                  isItemLive
-                    ? "bg-emerald-50/60 dark:bg-emerald-950/30 border-2 border-emerald-500 dark:border-emerald-500/80 ring-2 ring-emerald-500/20 shadow-sm"
-                    : isItemPast
-                    ? "bg-slate-50/80 dark:bg-slate-900/40 border border-slate-100 dark:border-slate-800/60 opacity-60 hover:opacity-100"
-                    : "bg-white dark:bg-slate-850 border border-slate-100 dark:border-slate-800/80 hover:border-indigo-200 dark:hover:border-indigo-900"
-                }`}
-              >
-                <div className="space-y-1 min-w-0 pr-2">
-                  <div className="flex items-center gap-2 flex-wrap">
+              return (
+                <div
+                  key={item.id}
+                  className={`group min-w-[210px] sm:min-w-[240px] max-w-[260px] shrink-0 p-3.5 rounded-2xl transition-all flex flex-col justify-between space-y-2.5 ${
+                    isItemLive
+                      ? "bg-emerald-50/70 dark:bg-emerald-950/40 border-2 border-emerald-500 dark:border-emerald-500/90 ring-2 ring-emerald-500/20 shadow-md"
+                      : isItemPast
+                      ? "bg-slate-50/80 dark:bg-slate-900/40 border border-slate-100 dark:border-slate-800/60 opacity-60 hover:opacity-100"
+                      : "bg-white dark:bg-slate-850 border border-slate-200/90 dark:border-slate-800 hover:border-indigo-300 dark:hover:border-indigo-800 shadow-xs"
+                  }`}
+                >
+                  {/* 1. Card Top: Time and Status Badges */}
+                  <div className="flex items-center justify-between gap-1.5">
                     <span
-                      className={`font-bold text-xs sm:text-sm ${
-                        isItemLive
-                          ? "text-emerald-900 dark:text-emerald-100"
-                          : "text-slate-900 dark:text-white"
-                      }`}
-                    >
-                      {item.subject}
-                    </span>
-                    {item.code && (
-                      <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-500">
-                        {item.code}
-                      </span>
-                    )}
-                    {isItemLive && (
-                      <span className="inline-flex items-center gap-1 text-[9px] font-black uppercase tracking-wider text-white bg-emerald-600 px-2 py-0.5 rounded-full shadow-xs">
-                        <span className="w-1.5 h-1.5 rounded-full bg-white animate-ping inline-block" />
-                        Live
-                      </span>
-                    )}
-                    {isItemPast && (
-                      <span className="text-[10px] text-slate-400 font-semibold">
-                        ✓ Done
-                      </span>
-                    )}
-                  </div>
-
-                  <div className="flex items-center gap-3 text-[11px] text-slate-400 flex-wrap">
-                    {item.room && (
-                      <span className="flex items-center gap-1">
-                        <MapPin className="w-3 h-3 text-slate-400" />
-                        <span>{item.room}</span>
-                      </span>
-                    )}
-                    {item.professor && (
-                      <span className="flex items-center gap-1">
-                        <User className="w-3 h-3 text-slate-400" />
-                        <span>{item.professor}</span>
-                      </span>
-                    )}
-                  </div>
-                </div>
-
-                {/* Time Badge and Delete Action */}
-                <div className="flex items-center gap-2 shrink-0">
-                  <div className="text-right">
-                    <span
-                      className={`text-xs font-mono font-semibold px-2 py-1 rounded-lg border block ${
+                      className={`text-[11px] font-mono font-bold px-2 py-0.5 rounded-lg border ${
                         isItemLive
                           ? "bg-emerald-600 text-white border-emerald-600 shadow-xs"
                           : "bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 border-indigo-100 dark:border-indigo-900/60"
                       }`}
                     >
-                      {item.startTime}
+                      {item.startTime} – {item.endTime}
                     </span>
-                    <span className="text-[10px] text-slate-400 mt-0.5 block">
-                      to {item.endTime}
-                    </span>
+
+                    <div className="flex items-center gap-1">
+                      {isItemLive && (
+                        <span className="inline-flex items-center gap-1 text-[9px] font-black uppercase tracking-wider text-white bg-emerald-600 px-2 py-0.5 rounded-full shadow-xs">
+                          <span className="w-1.5 h-1.5 rounded-full bg-white animate-ping inline-block" />
+                          Live
+                        </span>
+                      )}
+                      {isItemPast && (
+                        <span className="text-[10px] text-slate-400 font-semibold">
+                          ✓ Done
+                        </span>
+                      )}
+
+                      {isAdmin && (
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteEntry(item.id, item.subject)}
+                          className="p-1 text-slate-300 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/50 rounded-lg transition-colors opacity-0 group-hover:opacity-100 ml-0.5"
+                          title="Delete Class"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </div>
                   </div>
 
-                  {isAdmin && (
-                    <button
-                      type="button"
-                      onClick={() => handleDeleteEntry(item.id, item.subject)}
-                      className="p-1.5 text-slate-300 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/50 rounded-lg transition-colors opacity-70 group-hover:opacity-100"
-                      title="Delete Class"
+                  {/* 2. Card Middle: Subject and Code */}
+                  <div>
+                    <h4
+                      className={`font-extrabold text-sm line-clamp-1 ${
+                        isItemLive
+                          ? "text-emerald-950 dark:text-emerald-100"
+                          : "text-slate-900 dark:text-white"
+                      }`}
+                      title={item.subject}
                     >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
-                  )}
+                      {item.subject}
+                    </h4>
+                    {item.code && (
+                      <span className="text-[10px] font-mono text-slate-400 font-medium">
+                        {item.code}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* 3. Card Bottom: Room and Professor */}
+                  <div className="flex items-center gap-2 text-[11px] text-slate-500 dark:text-slate-400 pt-1 border-t border-slate-100 dark:border-slate-800/60 truncate">
+                    {item.room ? (
+                      <span className="flex items-center gap-1 truncate" title={item.room}>
+                        <MapPin className="w-3 h-3 text-slate-400 shrink-0" />
+                        <span className="truncate">{item.room}</span>
+                      </span>
+                    ) : item.professor ? (
+                      <span className="flex items-center gap-1 truncate" title={item.professor}>
+                        <User className="w-3 h-3 text-slate-400 shrink-0" />
+                        <span className="truncate">{item.professor}</span>
+                      </span>
+                    ) : (
+                      <span className="text-slate-400 italic text-[10px]">No room set</span>
+                    )}
+                    {item.room && item.professor && (
+                      <span className="flex items-center gap-1 truncate text-slate-400" title={item.professor}>
+                        • <User className="w-3 h-3 shrink-0" />
+                        <span className="truncate">{item.professor}</span>
+                      </span>
+                    )}
+                  </div>
                 </div>
-              </div>
-            );
-          })
+              );
+            })
+        )}
+
+        {/* Quick Add Class card at end of row for Admin */}
+        {isAdmin && entries.length > 0 && (
+          <button
+            type="button"
+            onClick={() => handleOpenAddModal(activeDay)}
+            className="min-w-[120px] shrink-0 p-3 rounded-2xl border-2 border-dashed border-slate-200 dark:border-slate-800 hover:border-indigo-400 dark:hover:border-indigo-600 hover:bg-indigo-50/40 dark:hover:bg-indigo-950/20 text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-all flex flex-col items-center justify-center gap-1 text-xs font-semibold"
+          >
+            <Plus className="w-4 h-4" />
+            <span>Add Class</span>
+          </button>
         )}
       </div>
 
