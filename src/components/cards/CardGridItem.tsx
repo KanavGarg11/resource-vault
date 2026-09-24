@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { Card, THEME_CONFIG } from "@/lib/types";
 import { useAdmin } from "@/hooks/useAdmin";
 import {
@@ -10,6 +11,7 @@ import {
   Trash2,
   ExternalLink,
   ChevronRight,
+  Loader2,
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 
@@ -33,15 +35,32 @@ function isImageItem(item: {
 
 export function CardGridItem({ card, onClick, onDelete }: CardGridItemProps) {
   const { isAdmin } = useAdmin();
+  const [isDeleting, setIsDeleting] = useState(false);
   const theme = THEME_CONFIG[card.theme] || THEME_CONFIG.personal;
   const items = card.items || [];
   const itemCount = card._count?.items ?? items.length;
 
-  const handleDelete = (e: React.MouseEvent) => {
+  const handleDelete = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!isAdmin || !onDelete) return;
+    if (!isAdmin || !onDelete || isDeleting) return;
     if (confirm(`Delete card "${card.title}" and all its contents?`)) {
-      onDelete(card.id);
+      setIsDeleting(true);
+      try {
+        const res = await fetch(`/api/cards/${card.id}`, {
+          method: "DELETE",
+        });
+        if (res.ok) {
+          onDelete(card.id);
+        } else {
+          const data = await res.json().catch(() => ({}));
+          alert(data.error || "Failed to delete card");
+        }
+      } catch (err) {
+        console.error("Error deleting card:", err);
+        alert("Failed to delete card. Please try again.");
+      } finally {
+        setIsDeleting(false);
+      }
     }
   };
 
@@ -67,10 +86,15 @@ export function CardGridItem({ card, onClick, onDelete }: CardGridItemProps) {
               <button
                 type="button"
                 onClick={handleDelete}
-                className="p-1 rounded-lg text-slate-300 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/60 opacity-0 group-hover:opacity-100 transition-all ml-1"
+                disabled={isDeleting}
+                className="p-1 rounded-lg text-slate-300 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/60 opacity-0 group-hover:opacity-100 transition-all ml-1 disabled:opacity-50"
                 title="Delete Card"
               >
-                <Trash2 className="w-3.5 h-3.5" />
+                {isDeleting ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin text-rose-500" />
+                ) : (
+                  <Trash2 className="w-3.5 h-3.5" />
+                )}
               </button>
             )}
           </div>

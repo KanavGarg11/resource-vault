@@ -217,9 +217,13 @@ export function CardThreadModal({
       if (res.ok) {
         if (onCardDeleted) onCardDeleted(cardId);
         onClose();
+      } else {
+        const data = await res.json().catch(() => ({}));
+        alert(data.error || "Failed to delete card");
       }
     } catch (err) {
-      console.error(err);
+      console.error("Error deleting card:", err);
+      alert("Failed to delete card. Please try again.");
     }
   };
 
