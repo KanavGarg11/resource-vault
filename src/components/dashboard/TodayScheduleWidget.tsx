@@ -13,18 +13,62 @@ import {
   Trash2,
   X,
   Loader2,
+  Radio,
+  CheckCircle2,
 } from "lucide-react";
 import Link from "next/link";
 
 const DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+
+/**
+ * Parses time strings like "09:00 AM", "9:00am", "14:30", "9:30" into total minutes from midnight (0 - 1439).
+ */
+function parseTimeToMinutes(timeStr: string): number | null {
+  if (!timeStr) return null;
+  const cleaned = timeStr.trim();
+  const match = cleaned.match(/^(\d{1,2}):(\d{2})(?:\s*([aApP][mM]))?$/);
+  if (!match) return null;
+
+  let hours = parseInt(match[1], 10);
+  const minutes = parseInt(match[2], 10);
+  const meridian = match[3]?.toUpperCase();
+
+  if (meridian === "PM" && hours < 12) {
+    hours += 12;
+  } else if (meridian === "AM" && hours === 12) {
+    hours = 0;
+  }
+
+  return hours * 60 + minutes;
+}
+
+/**
+ * Formats duration in minutes into a friendly string like "25m" or "1h 15m".
+ */
+function formatDuration(minutes: number): string {
+  if (minutes < 1) return "less than a min";
+  if (minutes < 60) return `${minutes}m`;
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  return m > 0 ? `${h}h ${m}m` : `${h}h`;
+}
 
 export function TodayScheduleWidget() {
   const { isAdmin, openPinModal } = useAdmin();
 
   const [entries, setEntries] = useState<TimetableEntry[]>([]);
   const [loading, setLoading] = useState(true);
+  const [currentTime, setCurrentTime] = useState<Date>(new Date());
 
-  // Get current day name (default to Monday if weekend)
+  // Update clock every 30 seconds for real-time live class detection
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 30000);
+    return () => clearInterval(timer);
+  }, []);
+
+  // Determine current day name (Mon-Sat, default to Mon on Sunday)
   const currentDayIndex = new Date().getDay(); // 0 is Sun, 1 is Mon...
   const todayName =
     currentDayIndex >= 1 && currentDayIndex <= 6
@@ -135,6 +179,53 @@ export function TodayScheduleWidget() {
     }
   };
 
+  // --- Live Status Calculations ---
+  const currentMinutes = currentTime.getHours() * 60 + currentTime.getMinutes();
+  const isViewingToday = activeDay === todayName;
+
+  let liveClass: TimetableEntry | null = null;
+  let nextClass: TimetableEntry | null = null;
+  let allDoneToday = false;
+
+  if (isViewingToday && entries.length > 0) {
+    // Sort entries chronologically by parsed start time
+    const sorted = [...entries].sort((a, b) => {
+      const minA = parseTimeToMinutes(a.startTime) ?? 0;
+      const minB = parseTimeToMinutes(b.startTime) ?? 0;
+      return minA - minB;
+    });
+
+    for (const item of sorted) {
+      const startMin = parseTimeToMinutes(item.startTime);
+      const endMin = parseTimeToMinutes(item.endTime);
+
+      if (startMin !== null && endMin !== null) {
+        if (currentMinutes >= startMin && currentMinutes < endMin) {
+          liveClass = item;
+          break;
+        } else if (currentMinutes < startMin && !nextClass) {
+          nextClass = item;
+        }
+      }
+    }
+
+    if (!liveClass && !nextClass && sorted.length > 0) {
+      const lastClass = sorted[sorted.length - 1];
+      const lastEnd = parseTimeToMinutes(lastClass.endTime);
+      if (lastEnd !== null && currentMinutes >= lastEnd) {
+        allDoneToday = true;
+      }
+    }
+  }
+
+  const liveClassEndMin = liveClass ? parseTimeToMinutes(liveClass.endTime) : null;
+  const liveRemainingMins =
+    liveClassEndMin !== null ? Math.max(0, liveClassEndMin - currentMinutes) : null;
+
+  const nextClassStartMin = nextClass ? parseTimeToMinutes(nextClass.startTime) : null;
+  const nextStartInMins =
+    nextClassStartMin !== null ? Math.max(0, nextClassStartMin - currentMinutes) : null;
+
   return (
     <div className="glass-panel rounded-3xl p-5 shadow-sm space-y-4">
       {/* Header */}
@@ -147,7 +238,7 @@ export function TodayScheduleWidget() {
             <h3 className="font-bold text-sm sm:text-base text-slate-900 dark:text-white">
               Daily Class Schedule
             </h3>
-            <p className="text-[11px] text-slate-400">Timetable at a glance</p>
+            <p className="text-[11px] text-slate-400">Timetable & live class tracker</p>
           </div>
         </div>
 
@@ -179,6 +270,103 @@ export function TodayScheduleWidget() {
         </div>
       </div>
 
+      {/* --- Option A: Smart Live Status Banner --- */}
+      {/* 1. Live Class Happening Right Now */}
+      {isViewingToday && liveClass && (
+        <div className="p-3.5 sm:p-4 rounded-2xl bg-gradient-to-r from-emerald-500/15 via-teal-500/10 to-indigo-500/10 border-2 border-emerald-500/40 dark:border-emerald-500/30 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-in fade-in duration-200">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="w-10 h-10 rounded-2xl bg-emerald-500 text-white flex items-center justify-center shrink-0 shadow-md shadow-emerald-500/25">
+              <Radio className="w-5 h-5 animate-pulse" />
+            </div>
+            <div className="min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider text-emerald-700 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-950 px-2.5 py-0.5 rounded-full border border-emerald-300 dark:border-emerald-800">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
+                  Live Class Now
+                </span>
+                <h4 className="font-extrabold text-sm sm:text-base text-slate-900 dark:text-white truncate">
+                  {liveClass.subject}
+                </h4>
+                {liveClass.code && (
+                  <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-white/80 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
+                    {liveClass.code}
+                  </span>
+                )}
+              </div>
+              <div className="flex items-center gap-3 text-xs text-slate-600 dark:text-slate-300 mt-1 flex-wrap">
+                {liveClass.room && (
+                  <span className="flex items-center gap-1">
+                    <MapPin className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                    <span>{liveClass.room}</span>
+                  </span>
+                )}
+                {liveClass.professor && (
+                  <span className="flex items-center gap-1">
+                    <User className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                    <span>{liveClass.professor}</span>
+                  </span>
+                )}
+                <span className="text-slate-400">
+                  • {liveClass.startTime} – {liveClass.endTime}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {liveRemainingMins !== null && (
+            <div className="self-end sm:self-auto shrink-0 bg-white dark:bg-slate-900/90 border border-emerald-200 dark:border-emerald-900/60 px-3 py-1.5 rounded-xl shadow-xs text-right">
+              <span className="text-[10px] uppercase font-bold text-slate-400 block tracking-wider">
+                Time Left
+              </span>
+              <span className="text-xs sm:text-sm font-extrabold font-mono text-emerald-600 dark:text-emerald-400">
+                {liveRemainingMins > 0 ? formatDuration(liveRemainingMins) : "Ending now"}
+              </span>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* 2. Break / Up Next Class */}
+      {isViewingToday && !liveClass && nextClass && (
+        <div className="p-3 sm:p-3.5 rounded-2xl bg-indigo-50/70 dark:bg-indigo-950/40 border border-indigo-200/80 dark:border-indigo-900/60 flex items-center justify-between gap-3 animate-in fade-in">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="w-9 h-9 rounded-xl bg-indigo-100 dark:bg-indigo-900/80 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0">
+              <Clock className="w-4 h-4" />
+            </div>
+            <div className="min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-[10px] font-black uppercase tracking-wider text-indigo-600 dark:text-indigo-400 bg-indigo-100 dark:bg-indigo-900/70 px-2 py-0.5 rounded-md">
+                  Up Next
+                </span>
+                <span className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white truncate">
+                  {nextClass.subject}
+                </span>
+                {nextClass.code && (
+                  <span className="text-[10px] font-mono text-slate-400">({nextClass.code})</span>
+                )}
+              </div>
+              <div className="flex items-center gap-2 text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 flex-wrap">
+                {nextClass.room && <span>{nextClass.room} • </span>}
+                <span>Starts at {nextClass.startTime}</span>
+                {nextStartInMins !== null && (
+                  <span className="font-semibold text-indigo-600 dark:text-indigo-400">
+                    (in {formatDuration(nextStartInMins)})
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 3. All Classes Done Today */}
+      {isViewingToday && !liveClass && !nextClass && allDoneToday && (
+        <div className="p-3 rounded-2xl bg-emerald-50/60 dark:bg-emerald-950/20 border border-emerald-200/60 dark:border-emerald-900/40 flex items-center gap-2.5 text-xs text-emerald-800 dark:text-emerald-300 animate-in fade-in">
+          <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
+          <span>All scheduled classes for today are completed! Enjoy your free time 🎉</span>
+        </div>
+      )}
+
       {/* Day Selector Pills */}
       <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
         {DAYS.map((day) => {
@@ -204,7 +392,7 @@ export function TodayScheduleWidget() {
       </div>
 
       {/* Schedule Items List */}
-      <div className="space-y-2 max-h-[300px] overflow-y-auto pr-1">
+      <div className="space-y-2 max-h-[320px] overflow-y-auto pr-1">
         {loading ? (
           <div className="py-8 text-center text-xs text-slate-400 flex items-center justify-center gap-2">
             <Loader2 className="w-4 h-4 animate-spin text-indigo-500" />
@@ -231,68 +419,110 @@ export function TodayScheduleWidget() {
                 onClick={openPinModal}
                 className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline font-semibold"
               >
-                Enter Admin PIN (1106) to set classes
+                Enter Admin PIN to set classes
               </button>
             )}
           </div>
         ) : (
-          entries.map((item) => (
-            <div
-              key={item.id}
-              className="group flex items-start justify-between p-3 rounded-2xl bg-white dark:bg-slate-850 border border-slate-100 dark:border-slate-800/80 hover:border-indigo-200 dark:hover:border-indigo-900 transition-colors"
-            >
-              <div className="space-y-1">
-                <div className="flex items-center gap-2">
-                  <span className="font-semibold text-xs sm:text-sm text-slate-900 dark:text-white">
-                    {item.subject}
-                  </span>
-                  {item.code && (
-                    <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-500">
-                      {item.code}
+          entries.map((item) => {
+            const startMin = parseTimeToMinutes(item.startTime);
+            const endMin = parseTimeToMinutes(item.endTime);
+            const isItemLive =
+              isViewingToday &&
+              startMin !== null &&
+              endMin !== null &&
+              currentMinutes >= startMin &&
+              currentMinutes < endMin;
+            const isItemPast =
+              isViewingToday && endMin !== null && currentMinutes >= endMin;
+
+            return (
+              <div
+                key={item.id}
+                className={`group flex items-start justify-between p-3 rounded-2xl transition-all ${
+                  isItemLive
+                    ? "bg-emerald-50/60 dark:bg-emerald-950/30 border-2 border-emerald-500 dark:border-emerald-500/80 ring-2 ring-emerald-500/20 shadow-sm"
+                    : isItemPast
+                    ? "bg-slate-50/80 dark:bg-slate-900/40 border border-slate-100 dark:border-slate-800/60 opacity-60 hover:opacity-100"
+                    : "bg-white dark:bg-slate-850 border border-slate-100 dark:border-slate-800/80 hover:border-indigo-200 dark:hover:border-indigo-900"
+                }`}
+              >
+                <div className="space-y-1 min-w-0 pr-2">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span
+                      className={`font-bold text-xs sm:text-sm ${
+                        isItemLive
+                          ? "text-emerald-900 dark:text-emerald-100"
+                          : "text-slate-900 dark:text-white"
+                      }`}
+                    >
+                      {item.subject}
                     </span>
-                  )}
+                    {item.code && (
+                      <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-500">
+                        {item.code}
+                      </span>
+                    )}
+                    {isItemLive && (
+                      <span className="inline-flex items-center gap-1 text-[9px] font-black uppercase tracking-wider text-white bg-emerald-600 px-2 py-0.5 rounded-full shadow-xs">
+                        <span className="w-1.5 h-1.5 rounded-full bg-white animate-ping inline-block" />
+                        Live
+                      </span>
+                    )}
+                    {isItemPast && (
+                      <span className="text-[10px] text-slate-400 font-semibold">
+                        ✓ Done
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="flex items-center gap-3 text-[11px] text-slate-400 flex-wrap">
+                    {item.room && (
+                      <span className="flex items-center gap-1">
+                        <MapPin className="w-3 h-3 text-slate-400" />
+                        <span>{item.room}</span>
+                      </span>
+                    )}
+                    {item.professor && (
+                      <span className="flex items-center gap-1">
+                        <User className="w-3 h-3 text-slate-400" />
+                        <span>{item.professor}</span>
+                      </span>
+                    )}
+                  </div>
                 </div>
 
-                <div className="flex items-center gap-3 text-[11px] text-slate-400 flex-wrap">
-                  {item.room && (
-                    <span className="flex items-center gap-1">
-                      <MapPin className="w-3 h-3 text-slate-400" />
-                      <span>{item.room}</span>
+                {/* Time Badge and Delete Action */}
+                <div className="flex items-center gap-2 shrink-0">
+                  <div className="text-right">
+                    <span
+                      className={`text-xs font-mono font-semibold px-2 py-1 rounded-lg border block ${
+                        isItemLive
+                          ? "bg-emerald-600 text-white border-emerald-600 shadow-xs"
+                          : "bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 border-indigo-100 dark:border-indigo-900/60"
+                      }`}
+                    >
+                      {item.startTime}
                     </span>
-                  )}
-                  {item.professor && (
-                    <span className="flex items-center gap-1">
-                      <User className="w-3 h-3 text-slate-400" />
-                      <span>{item.professor}</span>
+                    <span className="text-[10px] text-slate-400 mt-0.5 block">
+                      to {item.endTime}
                     </span>
+                  </div>
+
+                  {isAdmin && (
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteEntry(item.id, item.subject)}
+                      className="p-1.5 text-slate-300 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/50 rounded-lg transition-colors opacity-70 group-hover:opacity-100"
+                      title="Delete Class"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
                   )}
                 </div>
               </div>
-
-              {/* Time Badge and Delete Action */}
-              <div className="flex items-center gap-2">
-                <div className="text-right shrink-0">
-                  <span className="text-xs font-mono font-semibold text-indigo-600 dark:text-indigo-400 px-2 py-1 rounded-lg bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-100 dark:border-indigo-900/60 block">
-                    {item.startTime}
-                  </span>
-                  <span className="text-[10px] text-slate-400 mt-0.5 block">
-                    to {item.endTime}
-                  </span>
-                </div>
-
-                {isAdmin && (
-                  <button
-                    type="button"
-                    onClick={() => handleDeleteEntry(item.id, item.subject)}
-                    className="p-1.5 text-slate-300 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/50 rounded-lg transition-colors opacity-70 group-hover:opacity-100"
-                    title="Delete Class"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
-                )}
-              </div>
-            </div>
-          ))
+            );
+          })
         )}
       </div>
 
