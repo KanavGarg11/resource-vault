@@ -82,10 +82,13 @@ export function CardGridItem({ card, onClick, onDelete }: CardGridItemProps) {
         </h3>
       </div>
 
-      {/* Card Content Snippet Area (Visible up to where it can fit) */}
-      <div className="flex-1 px-4 sm:px-5 py-1 overflow-hidden relative space-y-2">
+      {/* Card Content Snippet Area (WhatsApp-Style: latest at bottom, older stacking upwards) */}
+      <div className="flex-1 px-4 sm:px-5 py-1 overflow-hidden relative flex flex-col-reverse justify-start gap-2">
+        {/* Subtle Fade-Out Mask at the top for older overflowing messages */}
+        <div className="absolute inset-x-0 top-0 h-8 bg-gradient-to-b from-white dark:from-slate-900 to-transparent pointer-events-none z-10" />
+
         {items.length === 0 ? (
-          <div className="h-full flex items-center justify-center text-xs text-slate-400 italic">
+          <div className="w-full h-full flex items-center justify-center text-xs text-slate-400 italic">
             Empty card thread. Tap to open and drop notes or files.
           </div>
         ) : (
@@ -95,7 +98,7 @@ export function CardGridItem({ card, onClick, onDelete }: CardGridItemProps) {
             return (
               <div
                 key={item.id}
-                className="text-xs bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-800/80 rounded-xl p-2.5 space-y-1.5 overflow-hidden"
+                className="text-xs bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-800/80 rounded-xl p-2.5 space-y-1.5 overflow-hidden shrink-0"
               >
                 {/* 1. Real Image Thumbnail Preview */}
                 {isImg && item.filePath && (
@@ -151,9 +154,6 @@ export function CardGridItem({ card, onClick, onDelete }: CardGridItemProps) {
             );
           })
         )}
-
-        {/* Subtle Fade-Out Mask at the bottom */}
-        <div className="absolute inset-x-0 bottom-0 h-10 bg-gradient-to-t from-white dark:from-slate-900 to-transparent pointer-events-none" />
       </div>
 
       {/* Bottom Footer Action */}

@@ -41,7 +41,7 @@ export async function GET(req: NextRequest) {
       include: {
         items: {
           orderBy: { createdAt: "desc" },
-          take: 3, // Preview latest 3 items for card preview
+          take: 6, // Preview latest items for card preview
         },
         _count: {
           select: { items: true },
