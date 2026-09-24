@@ -1,36 +1,33 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Resource } from "@/lib/types";
-import { OmniDropBar } from "@/components/dashboard/OmniDropBar";
+import { Card } from "@/lib/types";
 import { TodayScheduleWidget } from "@/components/dashboard/TodayScheduleWidget";
-import { UrgentDeadlinesWidget } from "@/components/dashboard/UrgentDeadlinesWidget";
-import { UpcomingExamsWidget } from "@/components/dashboard/UpcomingExamsWidget";
-import { QuickNotesWidget } from "@/components/dashboard/QuickNotesWidget";
-import { ResourceCard } from "@/components/resources/ResourceCard";
-import { FilePreviewModal } from "@/components/resources/FilePreviewModal";
+import { CardGridItem } from "@/components/cards/CardGridItem";
+import { CardThreadModal } from "@/components/cards/CardThreadModal";
+import { CreateCardModal } from "@/components/cards/CreateCardModal";
 import { BottomNav } from "@/components/layout/BottomNav";
-import {
-  Search,
-  SlidersHorizontal,
-  X,
-  Sparkles,
-} from "lucide-react";
+import { useAdmin } from "@/hooks/useAdmin";
+import { Search, Plus, X, Layers, Loader2 } from "lucide-react";
 
 export default function HomePage() {
-  const [resources, setResources] = useState<Resource[]>([]);
+  const { isAdmin, openPinModal } = useAdmin();
+
+  const [cards, setCards] = useState<Card[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedFilter, setSelectedFilter] = useState<string>("all");
-  const [previewResource, setPreviewResource] = useState<Resource | null>(null);
-  const [isMobileDropOpen, setIsMobileDropOpen] = useState(false);
+  const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
-  const fetchResources = async () => {
+  const fetchCards = async (query = searchQuery) => {
     try {
-      const res = await fetch("/api/resources");
+      const url = query.trim()
+        ? `/api/cards?search=${encodeURIComponent(query.trim())}`
+        : `/api/cards`;
+      const res = await fetch(url);
       if (res.ok) {
         const data = await res.json();
-        setResources(data.resources || []);
+        setCards(data.cards || []);
       }
     } catch (err) {
       console.error(err);
@@ -40,253 +37,164 @@ export default function HomePage() {
   };
 
   useEffect(() => {
-    fetchResources();
+    fetchCards();
   }, []);
 
-  const handleToggleStatus = async (
-    id: string,
-    newStatus: "pending" | "in-progress" | "completed"
-  ) => {
-    try {
-      const res = await fetch(`/api/resources/${id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: newStatus }),
-      });
-      if (res.ok) {
-        setResources((prev) =>
-          prev.map((r) => (r.id === id ? { ...r, status: newStatus } : r))
-        );
-      }
-    } catch (err) {
-      console.error(err);
-    }
+  const handleSearchChange = (val: string) => {
+    setSearchQuery(val);
+    fetchCards(val);
   };
 
-  const handleDeleteResource = (id: string) => {
-    setResources((prev) => prev.filter((r) => r.id !== id));
+  const handleCardDeleted = (id: string) => {
+    setCards((prev) => prev.filter((c) => c.id !== id));
+    if (selectedCardId === id) setSelectedCardId(null);
   };
-
-  // Filtered resources based on search and type filter
-  const filteredResources = resources.filter((item) => {
-    const matchesFilter =
-      selectedFilter === "all" ? true : item.type === selectedFilter;
-
-    const matchesSearch =
-      !searchQuery.trim() ||
-      item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (item.category && item.category.toLowerCase().includes(searchQuery.toLowerCase())) ||
-      (item.tags && item.tags.toLowerCase().includes(searchQuery.toLowerCase())) ||
-      (item.description && item.description.toLowerCase().includes(searchQuery.toLowerCase())) ||
-      (item.fileName && item.fileName.toLowerCase().includes(searchQuery.toLowerCase())) ||
-      (item.url && item.url.toLowerCase().includes(searchQuery.toLowerCase()));
-
-    return matchesFilter && matchesSearch;
-  });
-
-  const assignments = resources.filter((r) => r.type === "assignment");
-  const notes = resources.filter((r) => r.type === "note");
-
-  const FILTER_TABS = [
-    { id: "all", label: "All" },
-    { id: "study", label: "Study" },
-    { id: "assignment", label: "Assignments" },
-    { id: "link", label: "Links" },
-    { id: "media", label: "Media" },
-    { id: "note", label: "Notes" },
-  ];
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-7">
-      {/* 1. Global Search & Filter Bar (Moved just below navbar, above upload area) */}
-      <section className="space-y-3">
-        <div className="glass-panel rounded-2xl p-3 sm:p-4 shadow-sm border border-slate-200/90 dark:border-slate-800/90 space-y-3">
-          <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-            {/* Search Input */}
-            <div className="relative flex-1">
-              <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search across all study files, assignments, links, memes, and jokes..."
-                className="w-full pl-10 pr-9 py-2.5 text-xs sm:text-sm bg-slate-50 dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700/80 rounded-xl text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all"
-              />
-              {searchQuery && (
-                <button
-                  onClick={() => setSearchQuery("")}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-0.5"
-                  title="Clear search"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              )}
-            </div>
-
-            {/* Quick Filter Category Pills */}
-            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 shrink-0">
-              {FILTER_TABS.map((filter) => (
-                <button
-                  key={filter.id}
-                  onClick={() => setSelectedFilter(filter.id)}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all ${
-                    selectedFilter === filter.id
-                      ? "bg-indigo-600 text-white shadow-sm shadow-indigo-500/20"
-                      : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
-                  }`}
-                >
-                  {filter.label}
-                </button>
-              ))}
-            </div>
+      {/* 1. Global Search Bar */}
+      <section>
+        <div className="glass-panel rounded-2xl p-3 sm:p-4 shadow-sm border border-slate-200/90 dark:border-slate-800/90">
+          <div className="relative">
+            <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => handleSearchChange(e.target.value)}
+              placeholder="Search across card titles, notes, links, and filenames..."
+              className="w-full pl-10 pr-9 py-2.5 text-xs sm:text-sm bg-slate-50 dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700/80 rounded-xl text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all font-medium"
+            />
+            {searchQuery && (
+              <button
+                onClick={() => handleSearchChange("")}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-0.5"
+                title="Clear search"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            )}
           </div>
 
-          {/* Search Result Feedback Indicator */}
           {searchQuery && (
-            <div className="flex items-center justify-between text-xs text-slate-500 pt-1 border-t border-slate-100 dark:border-slate-800">
+            <div className="flex items-center justify-between text-xs text-slate-500 pt-2 mt-2 border-t border-slate-100 dark:border-slate-800">
               <span>
-                Found <strong className="text-indigo-600 dark:text-indigo-400 font-bold">{filteredResources.length}</strong> matching item(s) for &ldquo;{searchQuery}&rdquo;
+                Found <strong className="text-indigo-600 dark:text-indigo-400 font-bold">{cards.length}</strong> matching card(s)
               </span>
               <button
-                onClick={() => setSearchQuery("")}
+                onClick={() => handleSearchChange("")}
                 className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline"
               >
-                Reset search
+                Clear search
               </button>
             </div>
           )}
         </div>
       </section>
 
-      {/* 2. Upload / Omni-Drop Bar (Just below search area) */}
-      <section className="space-y-4">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+      {/* 2. "Add a Card" Area (Replaces old upload area) */}
+      <section>
+        <div className="glass-panel rounded-3xl p-4 sm:p-5 shadow-sm border border-slate-200/90 dark:border-slate-800/90 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <h1 className="text-xl sm:text-2xl font-extrabold tracking-tight text-slate-900 dark:text-white">
-              Student Command Center
-            </h1>
-            <p className="text-xs text-slate-500 dark:text-slate-400">
-              Drop any file, link, note, or assignment to keep it organized and visually at hand.
-            </p>
-          </div>
-
-          {/* Metrics Badges */}
-          <div className="flex items-center gap-2 overflow-x-auto pb-1">
-            <div className="px-3 py-1 rounded-xl bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-100 dark:border-indigo-900/60 text-xs shrink-0">
-              <span className="text-slate-500 dark:text-slate-400">Total Vault: </span>
-              <span className="font-bold text-indigo-600 dark:text-indigo-400">
-                {resources.length}
-              </span>
-            </div>
-            <div className="px-3 py-1 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-100 dark:border-amber-900/60 text-xs shrink-0">
-              <span className="text-slate-500 dark:text-slate-400">Pending Due: </span>
-              <span className="font-bold text-amber-600 dark:text-amber-400">
-                {assignments.filter((a) => a.status !== "completed").length}
-              </span>
-            </div>
-          </div>
-        </div>
-
-        {/* Omni-Drop Input Bar */}
-        <OmniDropBar onResourceCreated={fetchResources} />
-      </section>
-
-      {/* 3. Bento Grid: Timetable + Deadlines + Exams + Headed Sticky Memos */}
-      <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-        {/* Today's Timetable Widget */}
-        <TodayScheduleWidget />
-
-        {/* Urgent Deadlines Widget */}
-        <UrgentDeadlinesWidget
-          assignments={assignments}
-          onToggleStatus={handleToggleStatus}
-          onPreview={setPreviewResource}
-        />
-
-        {/* Academic Calendar & Exam Notices Widget */}
-        <UpcomingExamsWidget />
-
-        {/* Headed To-Dos & Sticky Memos (Full Width) */}
-        <div className="md:col-span-2 lg:col-span-3">
-          <QuickNotesWidget
-            notes={notes}
-            onPreview={setPreviewResource}
-            onToggleStatus={handleToggleStatus}
-            onDelete={handleDeleteResource}
-          />
-        </div>
-      </section>
-
-      {/* 4. Recent Drops Feed (Directly below memos, with resource hubs removed) */}
-      <section id="recent-feed" className="space-y-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white">
-              Recent Vault Drops
+            <h2 className="text-base sm:text-lg font-extrabold text-slate-900 dark:text-white">
+              Create a Topic Card
             </h2>
-            <p className="text-xs text-slate-400">
-              Live feed of saved files, bookmarks, tasks, and media
+            <p className="text-xs text-slate-400 mt-0.5">
+              Each card mimics a WhatsApp self-chat. Drop notes, files, links, or images anytime in linear order.
             </p>
           </div>
-          <span className="text-xs text-slate-400">
-            Showing {filteredResources.length} item(s)
+
+          <button
+            onClick={() => {
+              if (!isAdmin) {
+                openPinModal();
+              } else {
+                setIsCreateModalOpen(true);
+              }
+            }}
+            className="flex items-center justify-center gap-2 px-5 py-2.5 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-md shadow-indigo-500/20 transition-all active:scale-95 shrink-0"
+          >
+            <Plus className="w-4 h-4 stroke-[2.5]" />
+            <span>{isAdmin ? "+ Add a Card" : "Unlock Admin to Add Cards"}</span>
+          </button>
+        </div>
+      </section>
+
+      {/* 3. Today's Timetable Widget First */}
+      <section>
+        <TodayScheduleWidget />
+      </section>
+
+      {/* 4. Latest Added Cards Grid (Last added first, all themes) */}
+      <section className="space-y-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-xl bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 flex items-center justify-center">
+              <Layers className="w-4 h-4" />
+            </div>
+            <div>
+              <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white">
+                Latest Added Cards
+              </h2>
+              <p className="text-xs text-slate-400">
+                All topic cards across themes — click any card to view its WhatsApp-style thread
+              </p>
+            </div>
+          </div>
+          <span className="text-xs font-semibold text-slate-400">
+            {cards.length} card{cards.length === 1 ? "" : "s"}
           </span>
         </div>
 
-        {/* Resource Cards Grid */}
         {loading ? (
-          <div className="py-12 text-center text-sm text-slate-400">
-            Loading your resources...
+          <div className="py-16 text-center text-sm text-slate-400 flex items-center justify-center gap-2">
+            <Loader2 className="w-4 h-4 animate-spin text-indigo-500" />
+            <span>Loading cards...</span>
           </div>
-        ) : filteredResources.length === 0 ? (
-          <div className="py-12 text-center bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-8 space-y-2">
-            <SlidersHorizontal className="w-8 h-8 mx-auto text-slate-400" />
-            <h4 className="text-sm font-semibold text-slate-800 dark:text-slate-200">
-              No matching resources found
+        ) : cards.length === 0 ? (
+          <div className="py-16 text-center bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-8 space-y-3">
+            <div className="w-12 h-12 rounded-2xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-500 mx-auto flex items-center justify-center">
+              <Layers className="w-6 h-6" />
+            </div>
+            <h4 className="text-sm font-bold text-slate-800 dark:text-slate-200">
+              {searchQuery ? "No matching cards found" : "No cards created yet"}
             </h4>
-            <p className="text-xs text-slate-400">
-              Try adjusting your search query or drop a new item above.
+            <p className="text-xs text-slate-400 max-w-sm mx-auto">
+              {searchQuery
+                ? "Try searching for a different keyword or topic."
+                : "Click '+ Add a Card' above to create your first card (e.g. OS Lecture Notes, Shopping Wishlist)."}
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {filteredResources.map((item) => (
-              <ResourceCard
-                key={item.id}
-                resource={item}
-                onDelete={handleDeleteResource}
-                onToggleStatus={handleToggleStatus}
-                onPreview={setPreviewResource}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            {cards.map((card) => (
+              <CardGridItem
+                key={card.id}
+                card={card}
+                onClick={() => setSelectedCardId(card.id)}
+                onDelete={handleCardDeleted}
               />
             ))}
           </div>
         )}
       </section>
 
-      {/* File & Note Preview Modal */}
-      <FilePreviewModal
-        resource={previewResource}
-        onClose={() => setPreviewResource(null)}
+      {/* Card Thread WhatsApp-Style Modal */}
+      <CardThreadModal
+        cardId={selectedCardId}
+        onClose={() => setSelectedCardId(null)}
+        onCardUpdated={() => fetchCards()}
+        onCardDeleted={handleCardDeleted}
       />
 
-      {/* Mobile Modal Omni Drop */}
-      {isMobileDropOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-          <div className="w-full max-w-lg">
-            <OmniDropBar
-              isModal
-              onClose={() => setIsMobileDropOpen(false)}
-              onResourceCreated={() => {
-                fetchResources();
-                setIsMobileDropOpen(false);
-              }}
-            />
-          </div>
-        </div>
-      )}
+      {/* Create Card Modal */}
+      <CreateCardModal
+        isOpen={isCreateModalOpen}
+        onClose={() => setIsCreateModalOpen(false)}
+        onCardCreated={() => fetchCards()}
+      />
 
       {/* Mobile Bottom Navigation */}
-      <BottomNav onQuickDropOpen={() => setIsMobileDropOpen(true)} />
+      <BottomNav onAddCardOpen={() => setIsCreateModalOpen(true)} />
     </div>
   );
 }

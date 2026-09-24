@@ -7,25 +7,27 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model Resource {
-  id          String    @id @default(cuid())
-  title       String
-  description String?
-  type        String    // 'study', 'assignment', 'link', 'media', 'note', 'timetable', 'calendar'
-  category    String?   // e.g. Subject name: 'Operating Systems', 'Web Dev'
-  semester    String?   // e.g. 'Sem 4'
-  url         String?   // External link or URL
-  filePath    String?   // Local or cloud file path /uploads/...
-  fileName    String?   // Original uploaded file name
-  fileSize    Int?      // Size in bytes
-  mimeType    String?   // e.g. 'application/pdf', 'image/jpeg'
-  tags        String?   // Comma separated tags e.g. 'PYQ,Syllabus,Important'
-  isPinned    Boolean   @default(false)
-  dueDate     DateTime? // For assignments and time-sensitive reminders
-  status      String?   @default("pending") // 'pending', 'in-progress', 'completed'
-  priority    String?   @default("normal")  // 'low', 'normal', 'high', 'urgent'
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+model Card {
+  id        String     @id @default(cuid())
+  title     String     // Bold title on top
+  theme     String     // 'study' | 'study-to-do' | 'schedules' | 'to-do' | 'personal'
+  isPinned  Boolean    @default(false)
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  items     CardItem[]
+}
+
+model CardItem {
+  id        String   @id @default(cuid())
+  cardId    String
+  card      Card     @relation(fields: [cardId], references: [id], onDelete: Cascade)
+  type      String   // 'text' | 'link' | 'image' | 'pdf' | 'file'
+  content   String?  // Text content, note, or link URL
+  filePath  String?  // Uploaded file path (/uploads/...)
+  fileName  String?  // Original file name
+  fileSize  Int?     // Size in bytes
+  mimeType  String?  // MIME type
+  createdAt DateTime @default(now())
 }
 
 model TimetableEntry {
@@ -33,31 +35,11 @@ model TimetableEntry {
   dayOfWeek String   // 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'
   subject   String   // Course / Subject Name
   code      String?  // Course code e.g. 'CS401'
-  startTime String   // e.g. '09:00'
-  endTime   String   // e.g. '10:00'
-  room      String?  // e.g. 'Hall B', 'Lab 2'
-  professor String?  // e.g. 'Dr. Smith'
+  startTime String   // e.g. '09:00 AM'
+  endTime   String   // e.g. '10:00 AM'
+  room      String?  // e.g. 'Room 302', 'Lab 2'
+  professor String?  // e.g. 'Dr. Rao'
   order     Int      @default(0)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-}
-
-model AcademicEvent {
-  id          String    @id @default(cuid())
-  title       String    // e.g. 'Mid-Term Examinations', 'Fall Break'
-  eventType   String    // 'exam', 'holiday', 'deadline', 'calendar'
-  startDate   DateTime
-  endDate     DateTime?
-  description String?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-}
-
-model Subject {
-  id        String   @id @default(cuid())
-  name      String   @unique
-  code      String?
-  color     String?  @default("indigo") // tailwind color tone
-  semester  String?
-  createdAt DateTime @default(now())
 }

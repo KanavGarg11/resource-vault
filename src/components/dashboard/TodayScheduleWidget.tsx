@@ -56,7 +56,7 @@ export function TodayScheduleWidget() {
         </div>
 
         <Link
-          href="/timetable"
+          href="/theme/schedules"
           className="text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 flex items-center gap-0.5"
         >
           <span>Full Week</span>

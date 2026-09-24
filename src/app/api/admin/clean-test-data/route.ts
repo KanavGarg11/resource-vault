@@ -11,23 +11,23 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const deletedResources = await db.resource.deleteMany();
+    const deletedItems = await db.cardItem.deleteMany();
+    const deletedCards = await db.card.deleteMany();
     const deletedTimetable = await db.timetableEntry.deleteMany();
-    const deletedEvents = await db.academicEvent.deleteMany();
 
     return NextResponse.json({
       success: true,
-      message: "All test and sample data removed successfully.",
+      message: "All cards and data removed successfully.",
       counts: {
-        resources: deletedResources.count,
+        cards: deletedCards.count,
+        items: deletedItems.count,
         timetable: deletedTimetable.count,
-        events: deletedEvents.count,
       },
     });
   } catch (error: any) {
     console.error("Clean error:", error);
     return NextResponse.json(
-      { error: error?.message || "Failed to clear test data" },
+      { error: error?.message || "Failed to clear cards" },
       { status: 500 }
     );
   }
