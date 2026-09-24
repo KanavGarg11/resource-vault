@@ -70,9 +70,14 @@ export function CreateCardModal({
           const name = (file.name || "").toLowerCase();
 
           let itemType: "text" | "link" | "image" | "pdf" | "file" = "file";
-          if (mime.startsWith("image/")) {
+          const isImg =
+            mime.startsWith("image/") ||
+            /\.(jpg|jpeg|png|webp|gif|svg|bmp|ico|avif)$/i.test(name);
+          const isPdf = mime.includes("pdf") || name.endsWith(".pdf");
+
+          if (isImg) {
             itemType = "image";
-          } else if (name.endsWith(".pdf") || mime.includes("pdf")) {
+          } else if (isPdf) {
             itemType = "pdf";
           }
 

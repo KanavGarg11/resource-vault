@@ -9,6 +9,7 @@ import {
   Paperclip,
   Trash2,
   Copy,
+  Pencil,
   Check,
   ExternalLink,
   Download,
@@ -23,6 +24,18 @@ import {
   Lock,
 } from "lucide-react";
 import { format, formatDistanceToNow } from "date-fns";
+
+function isImageItem(item: {
+  type?: string;
+  filePath?: string | null;
+  fileName?: string | null;
+  mimeType?: string | null;
+}) {
+  if (item.type === "image") return true;
+  if (item.mimeType && item.mimeType.toLowerCase().startsWith("image/")) return true;
+  const pathOrName = (item.filePath || item.fileName || "").toLowerCase();
+  return /\.(jpg|jpeg|png|webp|gif|svg|bmp|ico|avif)$/i.test(pathOrName);
+}
 
 interface CardThreadModalProps {
   cardId: string | null;
@@ -46,6 +59,9 @@ export function CardThreadModal({
   const [sending, setSending] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [lightboxImage, setLightboxImage] = useState<string | null>(null);
+  const [editingItemId, setEditingItemId] = useState<string | null>(null);
+  const [editingText, setEditingText] = useState("");
+  const [savingEdit, setSavingEdit] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -125,9 +141,14 @@ export function CardThreadModal({
         const mime = (mimeType || "").toLowerCase();
         const name = (originalFileName || "").toLowerCase();
 
-        if (mime.startsWith("image/")) {
+        const isImg =
+          mime.startsWith("image/") ||
+          /\.(jpg|jpeg|png|webp|gif|svg|bmp|ico|avif)$/i.test(name);
+        const isPdf = mime.includes("pdf") || name.endsWith(".pdf");
+
+        if (isImg) {
           itemType = "image";
-        } else if (name.endsWith(".pdf") || mime.includes("pdf")) {
+        } else if (isPdf) {
           itemType = "pdf";
         } else {
           itemType = "file";
@@ -206,6 +227,46 @@ export function CardThreadModal({
     navigator.clipboard.writeText(text);
     setCopiedId(id);
     setTimeout(() => setCopiedId(null), 1500);
+  };
+
+  const handleStartEdit = (item: CardItem) => {
+    setEditingItemId(item.id);
+    setEditingText(item.content || "");
+  };
+
+  const handleCancelEdit = () => {
+    setEditingItemId(null);
+    setEditingText("");
+  };
+
+  const handleSaveEdit = async (itemId: string) => {
+    if (!isAdmin) return;
+    setSavingEdit(true);
+    try {
+      const res = await fetch(`/api/cards/${cardId}/items`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          itemId,
+          content: editingText,
+        }),
+      });
+
+      if (res.ok) {
+        setEditingItemId(null);
+        setEditingText("");
+        await fetchCard();
+        onCardUpdated();
+      } else {
+        const data = await res.json();
+        alert(data.error || "Failed to update item");
+      }
+    } catch (err: any) {
+      console.error(err);
+      alert(err.message || "Error updating item");
+    } finally {
+      setSavingEdit(false);
+    }
   };
 
   const themeInfo = card ? THEME_CONFIG[card.theme] : null;
@@ -288,31 +349,42 @@ export function CardThreadModal({
             card.items.map((item, index) => {
               const createdDate = new Date(item.createdAt);
               const formattedTime = format(createdDate, "h:mm a");
+              const isImg = isImageItem(item);
+              const isEditing = editingItemId === item.id;
 
               return (
                 <div
                   key={item.id}
-                  className="group relative flex flex-col max-w-[88%] sm:max-w-[80%] self-start animate-in fade-in slide-in-from-bottom-1 duration-150"
+                  className="group relative flex flex-col max-w-[92%] sm:max-w-[85%] self-start animate-in fade-in slide-in-from-bottom-1 duration-150"
                 >
-                  <div className="bg-white dark:bg-slate-850 border border-slate-200/90 dark:border-slate-800 rounded-2xl p-3.5 shadow-sm space-y-2.5 hover:border-indigo-300 dark:hover:border-indigo-800 transition-colors">
-                    {/* 1. Image Format */}
-                    {item.type === "image" && item.filePath && (
+                  <div className="bg-white dark:bg-slate-850 border border-slate-200/90 dark:border-slate-800 rounded-2xl p-3 sm:p-3.5 shadow-sm space-y-2.5 hover:border-indigo-300 dark:hover:border-indigo-800 transition-colors w-full">
+                    {/* 1. Image Format (Full WhatsApp-Style Presentation) */}
+                    {isImg && item.filePath && (
                       <div className="space-y-2">
                         <div
                           onClick={() => setLightboxImage(item.filePath)}
-                          className="relative rounded-xl overflow-hidden cursor-zoom-in max-h-72 bg-black/10"
+                          className="relative rounded-2xl overflow-hidden cursor-zoom-in bg-slate-900/5 dark:bg-black/30 border border-slate-200/60 dark:border-slate-800 flex items-center justify-center"
                         >
                           {/* eslint-disable-next-line @next/next/no-img-element */}
                           <img
                             src={item.filePath}
-                            alt={item.fileName || "Uploaded image"}
-                            className="w-full h-auto object-cover rounded-xl"
+                            alt={item.fileName || "Image"}
+                            className="w-full max-h-[500px] object-contain rounded-2xl mx-auto block hover:opacity-95 transition-opacity"
                             loading="lazy"
                           />
                         </div>
-                        {item.fileName && (
-                          <div className="flex items-center justify-between text-[11px] text-slate-400 pt-1">
-                            <span className="truncate max-w-[180px]">{item.fileName}</span>
+                        <div className="flex items-center justify-between text-[11px] text-slate-400 px-0.5">
+                          <span className="truncate max-w-[180px] sm:max-w-xs font-medium">
+                            {item.fileName || "Image"}
+                          </span>
+                          <div className="flex items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() => setLightboxImage(item.filePath)}
+                              className="text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 font-medium text-xs"
+                            >
+                              View Full
+                            </button>
                             <a
                               href={item.filePath}
                               download={item.fileName || "image"}
@@ -322,12 +394,12 @@ export function CardThreadModal({
                               <span>Download</span>
                             </a>
                           </div>
-                        )}
+                        </div>
                       </div>
                     )}
 
                     {/* 2. PDF Format */}
-                    {item.type === "pdf" && item.filePath && (
+                    {!isImg && item.type === "pdf" && item.filePath && (
                       <div className="bg-red-50/60 dark:bg-red-950/30 border border-red-200/80 dark:border-red-900/60 rounded-xl p-3 flex items-center justify-between gap-3">
                         <div className="flex items-center gap-2.5 truncate">
                           <div className="w-8 h-8 rounded-lg bg-red-100 dark:bg-red-900/60 text-red-600 dark:text-red-300 flex items-center justify-center shrink-0">
@@ -361,7 +433,7 @@ export function CardThreadModal({
                     )}
 
                     {/* 3. Generic File Format */}
-                    {item.type === "file" && item.filePath && (
+                    {!isImg && item.type === "file" && item.filePath && (
                       <div className="bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-xl p-3 flex items-center justify-between gap-3">
                         <div className="flex items-center gap-2.5 truncate">
                           <div className="w-8 h-8 rounded-lg bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0">
@@ -390,8 +462,8 @@ export function CardThreadModal({
                       </div>
                     )}
 
-                    {/* 4. Link Item */}
-                    {item.type === "link" && item.content && (
+                    {/* 4. Link Item (when not editing) */}
+                    {!isEditing && item.type === "link" && item.content && (
                       <div className="bg-indigo-50/50 dark:bg-indigo-950/40 border border-indigo-100 dark:border-indigo-900/60 rounded-xl p-3 space-y-2">
                         <div className="flex items-center justify-between gap-2">
                           <a
@@ -407,10 +479,61 @@ export function CardThreadModal({
                       </div>
                     )}
 
-                    {/* 5. Text Message / Caption */}
-                    {item.content && item.type !== "link" && (
+                    {/* 5. Text Message / Caption - View Mode */}
+                    {!isEditing && item.content && item.type !== "link" && (
                       <div className="text-xs sm:text-sm text-slate-800 dark:text-slate-200 whitespace-pre-wrap leading-relaxed">
                         {item.content}
+                      </div>
+                    )}
+
+                    {/* 6. Inline Edit Mode */}
+                    {isEditing && (
+                      <div className="space-y-2 pt-1">
+                        <textarea
+                          value={editingText}
+                          onChange={(e) => setEditingText(e.target.value)}
+                          rows={3}
+                          className="w-full text-xs sm:text-sm bg-slate-50 dark:bg-slate-900 border-2 border-indigo-500 rounded-xl p-2.5 text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 resize-y"
+                          placeholder="Edit your message..."
+                          autoFocus
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
+                              e.preventDefault();
+                              handleSaveEdit(item.id);
+                            } else if (e.key === "Escape") {
+                              e.preventDefault();
+                              handleCancelEdit();
+                            }
+                          }}
+                        />
+                        <div className="flex items-center justify-between">
+                          <span className="text-[10px] text-slate-400">
+                            Ctrl+Enter to save • Esc to cancel
+                          </span>
+                          <div className="flex items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={handleCancelEdit}
+                              disabled={savingEdit}
+                              className="px-2.5 py-1 text-xs font-semibold text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                            >
+                              Cancel
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleSaveEdit(item.id)}
+                              disabled={savingEdit}
+                              className="px-3 py-1 text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg flex items-center gap-1 shadow-sm transition-colors disabled:opacity-50"
+                            >
+                              {savingEdit ? (
+                                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                              ) : (
+                                <Check className="w-3.5 h-3.5" />
+                              )}
+                              <span>Save</span>
+                            </button>
+                          </div>
+                        </div>
                       </div>
                     )}
 
@@ -419,7 +542,8 @@ export function CardThreadModal({
                       <span>{formattedTime}</span>
 
                       <div className="flex items-center gap-1">
-                        {item.content && (
+                        {/* Copy button */}
+                        {item.content ? (
                           <button
                             type="button"
                             onClick={() => handleCopyText(item.content!, item.id)}
@@ -432,8 +556,34 @@ export function CardThreadModal({
                               <Copy className="w-3 h-3" />
                             )}
                           </button>
+                        ) : item.filePath ? (
+                          <button
+                            type="button"
+                            onClick={() => handleCopyText(item.filePath!, item.id)}
+                            className="p-1 rounded text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
+                            title="Copy link"
+                          >
+                            {copiedId === item.id ? (
+                              <Check className="w-3 h-3 text-emerald-500" />
+                            ) : (
+                              <Copy className="w-3 h-3" />
+                            )}
+                          </button>
+                        ) : null}
+
+                        {/* Edit button (Admin only) */}
+                        {isAdmin && !isEditing && (item.content || item.type === "text" || item.type === "link") && (
+                          <button
+                            type="button"
+                            onClick={() => handleStartEdit(item)}
+                            className="p-1 rounded text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
+                            title="Edit message"
+                          >
+                            <Pencil className="w-3 h-3" />
+                          </button>
                         )}
 
+                        {/* Delete button (Admin only) */}
                         {isAdmin && (
                           <button
                             type="button"

@@ -89,3 +89,61 @@ export async function DELETE(
     );
   }
 }
+
+export async function PATCH(
+  req: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  if (!checkRequestAdmin(req)) {
+    return NextResponse.json(
+      { error: "Unauthorized: Admin PIN required to edit items" },
+      { status: 401 }
+    );
+  }
+
+  try {
+    const cardId = params.id;
+    const body = await req.json();
+    const { itemId, content } = body;
+
+    if (!itemId) {
+      return NextResponse.json(
+        { error: "itemId is required" },
+        { status: 400 }
+      );
+    }
+
+    const existing = await db.cardItem.findUnique({
+      where: { id: itemId },
+    });
+
+    if (!existing || existing.cardId !== cardId) {
+      return NextResponse.json(
+        { error: "Item not found in this card" },
+        { status: 404 }
+      );
+    }
+
+    const [updatedItem] = await db.$transaction([
+      db.cardItem.update({
+        where: { id: itemId },
+        data: {
+          content: content !== undefined ? content : existing.content,
+        },
+      }),
+      db.card.update({
+        where: { id: cardId },
+        data: { updatedAt: new Date() },
+      }),
+    ]);
+
+    return NextResponse.json({ success: true, item: updatedItem });
+  } catch (error: any) {
+    console.error("Error updating card item:", error);
+    return NextResponse.json(
+      { error: error?.message || "Failed to update item" },
+      { status: 500 }
+    );
+  }
+}
+

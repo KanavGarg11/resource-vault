@@ -19,6 +19,18 @@ interface CardGridItemProps {
   onDelete?: (id: string) => void;
 }
 
+function isImageItem(item: {
+  type?: string;
+  filePath?: string | null;
+  fileName?: string | null;
+  mimeType?: string | null;
+}) {
+  if (item.type === "image") return true;
+  if (item.mimeType && item.mimeType.toLowerCase().startsWith("image/")) return true;
+  const pathOrName = (item.filePath || item.fileName || "").toLowerCase();
+  return /\.(jpg|jpeg|png|webp|gif|svg|bmp|ico|avif)$/i.test(pathOrName);
+}
+
 export function CardGridItem({ card, onClick, onDelete }: CardGridItemProps) {
   const { isAdmin } = useAdmin();
   const theme = THEME_CONFIG[card.theme] || THEME_CONFIG.personal;
@@ -77,51 +89,67 @@ export function CardGridItem({ card, onClick, onDelete }: CardGridItemProps) {
             Empty card thread. Tap to open and drop notes or files.
           </div>
         ) : (
-          items.map((item) => (
-            <div
-              key={item.id}
-              className="text-xs bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-800/80 rounded-xl p-2.5 space-y-1"
-            >
-              {/* Image Snippet */}
-              {item.type === "image" && item.filePath && (
-                <div className="flex items-center gap-2 text-slate-600 dark:text-slate-300">
-                  <ImageIcon className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
-                  <span className="font-medium truncate">{item.fileName || "Image"}</span>
-                </div>
-              )}
+          items.map((item) => {
+            const isImg = isImageItem(item);
 
-              {/* PDF Snippet */}
-              {item.type === "pdf" && (
-                <div className="flex items-center gap-2 text-slate-600 dark:text-slate-300">
-                  <FileText className="w-3.5 h-3.5 text-red-500 shrink-0" />
-                  <span className="font-medium truncate">{item.fileName || "PDF Document"}</span>
-                </div>
-              )}
+            return (
+              <div
+                key={item.id}
+                className="text-xs bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-800/80 rounded-xl p-2.5 space-y-1.5 overflow-hidden"
+              >
+                {/* 1. Real Image Thumbnail Preview */}
+                {isImg && item.filePath && (
+                  <div className="space-y-1">
+                    <div className="rounded-lg overflow-hidden bg-slate-100 dark:bg-slate-900 border border-slate-200/50 dark:border-slate-700/50 h-28 w-full flex items-center justify-center relative">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={item.filePath}
+                        alt={item.fileName || "Image preview"}
+                        className="w-full h-full object-cover rounded-lg group-hover:scale-105 transition-transform duration-300"
+                        loading="lazy"
+                      />
+                    </div>
+                    {item.content && (
+                      <p className="text-slate-600 dark:text-slate-300 font-medium line-clamp-1">
+                        {item.content}
+                      </p>
+                    )}
+                  </div>
+                )}
 
-              {/* Link Snippet */}
-              {item.type === "link" && item.content && (
-                <div className="flex items-center gap-2 text-indigo-600 dark:text-indigo-400 font-medium truncate">
-                  <ExternalLink className="w-3.5 h-3.5 shrink-0" />
-                  <span className="truncate">{item.content}</span>
-                </div>
-              )}
+                {/* 2. PDF Snippet */}
+                {item.type === "pdf" && (
+                  <div className="flex items-center gap-2 text-slate-600 dark:text-slate-300">
+                    <FileText className="w-3.5 h-3.5 text-red-500 shrink-0" />
+                    <span className="font-medium truncate">{item.fileName || "PDF Document"}</span>
+                  </div>
+                )}
 
-              {/* File Snippet */}
-              {item.type === "file" && item.fileName && (
-                <div className="flex items-center gap-2 text-slate-600 dark:text-slate-300">
-                  <Paperclip className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                  <span className="font-medium truncate">{item.fileName}</span>
-                </div>
-              )}
+                {/* 3. Link Snippet */}
+                {item.type === "link" && item.content && (
+                  <div className="flex items-center gap-2 text-indigo-600 dark:text-indigo-400 font-medium truncate">
+                    <ExternalLink className="w-3.5 h-3.5 shrink-0" />
+                    <span className="truncate">{item.content}</span>
+                  </div>
+                )}
 
-              {/* Text Message Snippet */}
-              {item.content && item.type !== "link" && (
-                <p className="text-slate-600 dark:text-slate-300 line-clamp-2 leading-relaxed">
-                  {item.content}
-                </p>
-              )}
-            </div>
-          ))
+                {/* 4. Generic File Snippet */}
+                {!isImg && item.type === "file" && item.fileName && (
+                  <div className="flex items-center gap-2 text-slate-600 dark:text-slate-300">
+                    <Paperclip className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                    <span className="font-medium truncate">{item.fileName}</span>
+                  </div>
+                )}
+
+                {/* 5. Text Message Snippet (when not already rendered as image caption) */}
+                {!isImg && item.content && item.type !== "link" && (
+                  <p className="text-slate-600 dark:text-slate-300 line-clamp-2 leading-relaxed">
+                    {item.content}
+                  </p>
+                )}
+              </div>
+            );
+          })
         )}
 
         {/* Subtle Fade-Out Mask at the bottom */}
