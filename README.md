@@ -282,6 +282,8 @@ model TimetableEntry {
 
 ---
 
-## 📄 License
+## 📄 License & Intellectual Property
 
-This project is licensed under the [MIT License](LICENSE).
+Copyright © 2026 Kanav Garg. All rights reserved.
+
+This project is open for **personal, educational, and academic evaluation** purposes. Commercial use, monetization, redistribution, or publishing to public app stores (including the Google Play Store and Apple App Store) is strictly prohibited without prior written permission of the author. See [LICENSE](LICENSE) for full legal terms.
