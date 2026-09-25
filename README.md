@@ -37,7 +37,7 @@ Over time, this results in:
 
 ### ⏱️ 2. Real-Time Smart Timetable Engine
 * **Dynamic Time Tracking**: Automatically detects the current day and minute, tracking the progress of your academic day.
-* **Option A Smart Status Banners**:
+* **Smart Status Banners**:
   * 🔴 **Live Class In Progress**: Prominently highlights the class happening right now with subject name, room, professor, and a live duration countdown meter.
   * ☕ **Break / Up Next**: Indicates free periods and counts down to the next scheduled lecture.
   * 🏁 **Day Complete**: Celebrates when all scheduled classes for the day have concluded.
