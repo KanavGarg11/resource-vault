@@ -91,7 +91,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* 2. "Add a Card" Area (Replaces old upload area) */}
+      {/* 2. "Add a Card" Action Bar */}
       <section>
         <div className="glass-panel rounded-3xl p-4 sm:p-5 shadow-sm border border-slate-200/90 dark:border-slate-800/90 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
