@@ -63,10 +63,10 @@ Quickly filter and access resources across five distinct areas:
 * **5-Theme Bottom Navigation**: 1-tap mobile navigation bar with dynamic theme accent highlighting.
 * **Touch-Friendly Controls**: On-screen keypad for PIN entry, swipe-friendly horizontal timetable strip, and responsive chat modal.
 
-### 🔒 6. Security & Permission Architecture
-* **Public Read Access**: Visitors and classmates can browse study cards, view timetable schedules, and open/download reference files without needing to log in.
-* **Protected Admin Write**: Creating cards, posting messages, uploading files, editing notes, or modifying timetables requires unlocking with the Master PIN.
-* **HMAC-SHA256 Session Cookies**: Authenticated sessions are cryptographically signed using server-side HMAC tokens with automatic expiration. Plaintext PINs are never stored in the database or exposed to the client.
+### 🔒 6. Multi-User Private Vaults & Authentication
+* **100% Private Per-User Data Isolation**: Every registered user gets their own dedicated vault. All cards, notes, attachments, and timetable routines are strictly filtered by `userId` at the database level. No user can view, edit, or delete another user's resources.
+* **Google OAuth 2.0 & Email Authentication**: One-click "Continue with Google" sign-in via NextAuth, along with secure Email & Password registration with bcrypt hashing.
+* **Secure JWT Sessions**: Authentication state is maintained via encrypted HTTP-only session cookies with automatic token renewal and expiration.
 
 ---
 

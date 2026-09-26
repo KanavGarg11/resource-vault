@@ -90,7 +90,7 @@ export function TodayScheduleWidget() {
 
   useEffect(() => {
     fetchTimetable(activeDay);
-  }, [activeDay]);
+  }, [activeDay, isAdmin]);
 
   const fetchTimetable = async (day: string) => {
     setLoading(true);

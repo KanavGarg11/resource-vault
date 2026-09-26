@@ -1,14 +1,22 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { checkRequestAdmin } from "@/lib/auth";
+import { getCurrentUser } from "@/lib/session";
 
 export async function GET(req: NextRequest) {
   try {
+    const user = await getCurrentUser();
+    if (!user) {
+      return NextResponse.json({ entries: [] });
+    }
+
     const { searchParams } = new URL(req.url);
     const day = searchParams.get("day");
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const where: any = {};
+    const where: any = {
+      userId: user.id, // Only return timetable classes for the logged-in user
+    };
+
     if (day) {
       where.dayOfWeek = day;
     }
@@ -26,14 +34,15 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  if (!checkRequestAdmin(req)) {
-    return NextResponse.json(
-      { error: "Unauthorized: Admin PIN required to modify timetable" },
-      { status: 401 }
-    );
-  }
-
   try {
+    const user = await getCurrentUser();
+    if (!user) {
+      return NextResponse.json(
+        { error: "Unauthorized: Please sign in to modify timetable" },
+        { status: 401 }
+      );
+    }
+
     const body = await req.json();
     const { dayOfWeek, subject, code, startTime, endTime, room, professor } = body;
 
@@ -46,6 +55,7 @@ export async function POST(req: NextRequest) {
 
     const newEntry = await db.timetableEntry.create({
       data: {
+        userId: user.id,
         dayOfWeek,
         subject,
         code: code || null,

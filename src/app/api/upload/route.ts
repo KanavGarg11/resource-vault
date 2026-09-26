@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
-import { checkRequestAdmin } from "@/lib/auth";
+import { getCurrentUser } from "@/lib/session";
 import fs from "fs";
 import path from "path";
 
 export async function POST(req: NextRequest) {
-  if (!checkRequestAdmin(req)) {
+  const user = await getCurrentUser();
+  if (!user) {
     return NextResponse.json(
-      { error: "Unauthorized: Admin PIN required to upload files" },
+      { error: "Unauthorized: Please sign in to upload files" },
       { status: 401 }
     );
   }
@@ -17,6 +18,15 @@ export async function POST(req: NextRequest) {
 
     if (!file) {
       return NextResponse.json({ error: "No file provided" }, { status: 400 });
+    }
+
+    // Limit single file size to 15MB to prevent abuse on free hosting
+    const MAX_SIZE = 15 * 1024 * 1024;
+    if (file.size > MAX_SIZE) {
+      return NextResponse.json(
+        { error: "File size exceeds the 15MB limit. Please upload to Google Drive and paste the link instead." },
+        { status: 400 }
+      );
     }
 
     const uploadsDir = path.join(process.cwd(), "public", "uploads");

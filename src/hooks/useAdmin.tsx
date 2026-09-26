@@ -1,14 +1,24 @@
 "use client";
 
-import { useState, useEffect, createContext, useContext, ReactNode } from "react";
+import { useState, createContext, useContext, ReactNode } from "react";
+import { useSession, signOut } from "next-auth/react";
+import { useRouter } from "next/navigation";
+
+export interface UserProfile {
+  id: string;
+  name?: string | null;
+  email?: string | null;
+  image?: string | null;
+}
 
 interface AdminContextType {
   isAdmin: boolean;
   isLoading: boolean;
+  user: UserProfile | null;
   isPinModalOpen: boolean;
   openPinModal: () => void;
   closePinModal: () => void;
-  login: (pin: string) => Promise<{ success: boolean; error?: string }>;
+  login: (pin?: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => Promise<void>;
   checkAuth: () => Promise<void>;
 }
@@ -16,57 +26,33 @@ interface AdminContextType {
 const AdminContext = createContext<AdminContextType | undefined>(undefined);
 
 export function AdminProvider({ children }: { children: ReactNode }) {
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
+  const { data: session, status } = useSession();
+  const router = useRouter();
   const [isPinModalOpen, setIsPinModalOpen] = useState(false);
 
-  const checkAuth = async () => {
-    try {
-      const res = await fetch("/api/auth/status");
-      if (res.ok) {
-        const data = await res.json();
-        setIsAdmin(Boolean(data.isAdmin));
-      } else {
-        setIsAdmin(false);
-      }
-    } catch {
-      setIsAdmin(false);
-    } finally {
-      setIsLoading(false);
-    }
+  const isAdmin = status === "authenticated" && Boolean(session?.user);
+  const isLoading = status === "loading";
+  const user = (session?.user as UserProfile) || null;
+
+  const openPinModal = () => {
+    router.push("/login");
   };
 
-  useEffect(() => {
-    checkAuth();
-  }, []);
+  const closePinModal = () => {
+    setIsPinModalOpen(false);
+  };
 
-  const login = async (pin: string): Promise<{ success: boolean; error?: string }> => {
-    try {
-      const res = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ pin }),
-      });
-
-      const data = await res.json();
-      if (res.ok && data.success) {
-        setIsAdmin(true);
-        setIsPinModalOpen(false);
-        return { success: true };
-      } else {
-        return { success: false, error: data.error || "Incorrect PIN" };
-      }
-    } catch {
-      return { success: false, error: "Network error occurred" };
-    }
+  const login = async (): Promise<{ success: boolean; error?: string }> => {
+    router.push("/login");
+    return { success: true };
   };
 
   const logout = async () => {
-    try {
-      await fetch("/api/auth/logout", { method: "POST" });
-    } finally {
-      setIsAdmin(false);
-    }
+    await signOut({ callbackUrl: "/" });
+  };
+
+  const checkAuth = async () => {
+    // Handled reactively by NextAuth useSession()
   };
 
   return (
@@ -74,9 +60,10 @@ export function AdminProvider({ children }: { children: ReactNode }) {
       value={{
         isAdmin,
         isLoading,
+        user,
         isPinModalOpen,
-        openPinModal: () => setIsPinModalOpen(true),
-        closePinModal: () => setIsPinModalOpen(false),
+        openPinModal,
+        closePinModal,
         login,
         logout,
         checkAuth,

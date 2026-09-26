@@ -1,20 +1,34 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { checkRequestAdmin } from "@/lib/auth";
+import { getCurrentUser } from "@/lib/session";
 
 export async function POST(
   req: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  if (!checkRequestAdmin(req)) {
-    return NextResponse.json(
-      { error: "Unauthorized: Admin PIN required to add items" },
-      { status: 401 }
-    );
-  }
-
   try {
+    const user = await getCurrentUser();
+    if (!user) {
+      return NextResponse.json(
+        { error: "Unauthorized: Please sign in" },
+        { status: 401 }
+      );
+    }
+
     const cardId = params.id;
+
+    // Verify card ownership
+    const card = await db.card.findFirst({
+      where: { id: cardId, userId: user.id },
+    });
+
+    if (!card) {
+      return NextResponse.json(
+        { error: "Card not found or access denied" },
+        { status: 404 }
+      );
+    }
+
     const body = await req.json();
     const { type, content, filePath, fileName, fileSize, mimeType } = body;
 
@@ -58,14 +72,29 @@ export async function DELETE(
   req: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  if (!checkRequestAdmin(req)) {
-    return NextResponse.json(
-      { error: "Unauthorized: Admin PIN required" },
-      { status: 401 }
-    );
-  }
-
   try {
+    const user = await getCurrentUser();
+    if (!user) {
+      return NextResponse.json(
+        { error: "Unauthorized: Please sign in" },
+        { status: 401 }
+      );
+    }
+
+    const cardId = params.id;
+
+    // Verify card ownership
+    const card = await db.card.findFirst({
+      where: { id: cardId, userId: user.id },
+    });
+
+    if (!card) {
+      return NextResponse.json(
+        { error: "Card not found or access denied" },
+        { status: 404 }
+      );
+    }
+
     const { searchParams } = new URL(req.url);
     const itemId = searchParams.get("itemId");
 
@@ -94,15 +123,29 @@ export async function PATCH(
   req: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  if (!checkRequestAdmin(req)) {
-    return NextResponse.json(
-      { error: "Unauthorized: Admin PIN required to edit items" },
-      { status: 401 }
-    );
-  }
-
   try {
+    const user = await getCurrentUser();
+    if (!user) {
+      return NextResponse.json(
+        { error: "Unauthorized: Please sign in" },
+        { status: 401 }
+      );
+    }
+
     const cardId = params.id;
+
+    // Verify card ownership
+    const card = await db.card.findFirst({
+      where: { id: cardId, userId: user.id },
+    });
+
+    if (!card) {
+      return NextResponse.json(
+        { error: "Card not found or access denied" },
+        { status: 404 }
+      );
+    }
+
     const body = await req.json();
     const { itemId, content } = body;
 
@@ -113,31 +156,14 @@ export async function PATCH(
       );
     }
 
-    const existing = await db.cardItem.findUnique({
+    const updatedItem = await db.cardItem.update({
       where: { id: itemId },
+      data: {
+        content: content?.trim() || null,
+      },
     });
 
-    if (!existing || existing.cardId !== cardId) {
-      return NextResponse.json(
-        { error: "Item not found in this card" },
-        { status: 404 }
-      );
-    }
-
-    const [updatedItem] = await db.$transaction([
-      db.cardItem.update({
-        where: { id: itemId },
-        data: {
-          content: content !== undefined ? content : existing.content,
-        },
-      }),
-      db.card.update({
-        where: { id: cardId },
-        data: { updatedAt: new Date() },
-      }),
-    ]);
-
-    return NextResponse.json({ success: true, item: updatedItem });
+    return NextResponse.json({ item: updatedItem });
   } catch (error: any) {
     console.error("Error updating card item:", error);
     return NextResponse.json(
@@ -146,4 +172,3 @@ export async function PATCH(
     );
   }
 }
-

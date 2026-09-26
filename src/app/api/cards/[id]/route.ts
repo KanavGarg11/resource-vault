@@ -1,14 +1,22 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { checkRequestAdmin } from "@/lib/auth";
+import { getCurrentUser } from "@/lib/session";
 
 export async function GET(
   req: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
-    const card = await db.card.findUnique({
-      where: { id: params.id },
+    const user = await getCurrentUser();
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const card = await db.card.findFirst({
+      where: {
+        id: params.id,
+        userId: user.id, // Must belong to this user
+      },
       include: {
         items: {
           orderBy: { createdAt: "asc" }, // Linear chronological order like WhatsApp
@@ -34,14 +42,29 @@ export async function PATCH(
   req: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  if (!checkRequestAdmin(req)) {
-    return NextResponse.json(
-      { error: "Unauthorized: Admin PIN required to modify card" },
-      { status: 401 }
-    );
-  }
-
   try {
+    const user = await getCurrentUser();
+    if (!user) {
+      return NextResponse.json(
+        { error: "Unauthorized: Please sign in to modify card" },
+        { status: 401 }
+      );
+    }
+
+    const existingCard = await db.card.findFirst({
+      where: {
+        id: params.id,
+        userId: user.id,
+      },
+    });
+
+    if (!existingCard) {
+      return NextResponse.json(
+        { error: "Card not found or access denied" },
+        { status: 404 }
+      );
+    }
+
     const body = await req.json();
     const { title, theme, isPinned } = body;
 
@@ -74,14 +97,29 @@ export async function DELETE(
   req: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  if (!checkRequestAdmin(req)) {
-    return NextResponse.json(
-      { error: "Unauthorized: Admin PIN required to delete card" },
-      { status: 401 }
-    );
-  }
-
   try {
+    const user = await getCurrentUser();
+    if (!user) {
+      return NextResponse.json(
+        { error: "Unauthorized: Please sign in to delete card" },
+        { status: 401 }
+      );
+    }
+
+    const existingCard = await db.card.findFirst({
+      where: {
+        id: params.id,
+        userId: user.id,
+      },
+    });
+
+    if (!existingCard) {
+      return NextResponse.json(
+        { error: "Card not found or access denied" },
+        { status: 404 }
+      );
+    }
+
     await db.card.delete({
       where: { id: params.id },
     });

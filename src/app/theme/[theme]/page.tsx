@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useParams, notFound } from "next/navigation";
+import Link from "next/link";
 import { Card, CardTheme, THEME_CONFIG } from "@/lib/types";
 import { CardGridItem } from "@/components/cards/CardGridItem";
 import { CardThreadModal } from "@/components/cards/CardThreadModal";
@@ -19,6 +20,7 @@ import {
   X,
   Loader2,
   Layers,
+  LogIn,
 } from "lucide-react";
 
 const VALID_THEMES: CardTheme[] = [
@@ -50,7 +52,7 @@ export default function ThemePage() {
   const rawTheme = params.theme as string;
   const theme = rawTheme as CardTheme;
 
-  const { isAdmin, openPinModal } = useAdmin();
+  const { user, isAdmin, openPinModal } = useAdmin();
 
   const [cards, setCards] = useState<Card[]>([]);
   const [loading, setLoading] = useState(true);
@@ -80,7 +82,7 @@ export default function ThemePage() {
     if (isValidTheme) {
       fetchThemeCards();
     }
-  }, [theme]);
+  }, [theme, user]);
 
   if (!isValidTheme) {
     notFound();
@@ -126,7 +128,7 @@ export default function ThemePage() {
         {/* Add Card Button for this theme */}
         <button
           onClick={() => {
-            if (!isAdmin) openPinModal();
+            if (!user) openPinModal();
             else setIsCreateModalOpen(true);
           }}
           className="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-md shadow-indigo-500/20 transition-all self-start sm:self-auto shrink-0 active:scale-95"
@@ -161,6 +163,27 @@ export default function ThemePage() {
         <div className="py-20 text-center text-sm text-slate-400 flex items-center justify-center gap-2">
           <Loader2 className="w-4 h-4 animate-spin text-indigo-500" />
           <span>Loading {themeConfig.label} cards...</span>
+        </div>
+      ) : !user ? (
+        <div className="py-20 text-center bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-8 space-y-4">
+          <div className="w-12 h-12 rounded-2xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-500 mx-auto flex items-center justify-center">
+            <Icon className="w-6 h-6" />
+          </div>
+          <div className="space-y-1">
+            <h4 className="text-sm font-bold text-slate-800 dark:text-slate-200">
+              Sign In to View Your {themeConfig.label} Cards
+            </h4>
+            <p className="text-xs text-slate-400 max-w-sm mx-auto">
+              Your resources are private to your account. Sign in to view and create cards in this category.
+            </p>
+          </div>
+          <Link
+            href="/login"
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-md shadow-indigo-500/20 transition-all active:scale-95"
+          >
+            <LogIn className="w-3.5 h-3.5" />
+            <span>Sign In to Vault</span>
+          </Link>
         </div>
       ) : cards.length === 0 ? (
         <div className="py-20 text-center bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-8 space-y-3">

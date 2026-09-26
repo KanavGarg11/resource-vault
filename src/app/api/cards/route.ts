@@ -1,15 +1,24 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { checkRequestAdmin } from "@/lib/auth";
+import { getCurrentUser } from "@/lib/session";
 
 export async function GET(req: NextRequest) {
   try {
+    const user = await getCurrentUser();
+
+    // If user is not authenticated, return empty cards (strict data privacy)
+    if (!user) {
+      return NextResponse.json({ cards: [] });
+    }
+
     const { searchParams } = new URL(req.url);
     const theme = searchParams.get("theme");
     const search = searchParams.get("search");
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const where: any = {};
+    const where: any = {
+      userId: user.id, // Only fetch cards owned by the logged-in user
+    };
 
     if (theme && theme !== "all") {
       where.theme = theme;
@@ -17,17 +26,22 @@ export async function GET(req: NextRequest) {
 
     if (search && search.trim() !== "") {
       const q = search.trim();
-      where.OR = [
-        { title: { contains: q } },
+      where.AND = [
+        { userId: user.id },
         {
-          items: {
-            some: {
-              OR: [
-                { content: { contains: q } },
-                { fileName: { contains: q } },
-              ],
+          OR: [
+            { title: { contains: q, mode: "insensitive" } },
+            {
+              items: {
+                some: {
+                  OR: [
+                    { content: { contains: q, mode: "insensitive" } },
+                    { fileName: { contains: q, mode: "insensitive" } },
+                  ],
+                },
+              },
             },
-          },
+          ],
         },
       ];
     }
@@ -60,14 +74,15 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  if (!checkRequestAdmin(req)) {
-    return NextResponse.json(
-      { error: "Unauthorized: Admin PIN required to create cards" },
-      { status: 401 }
-    );
-  }
-
   try {
+    const user = await getCurrentUser();
+    if (!user) {
+      return NextResponse.json(
+        { error: "Unauthorized: Please sign in to create cards" },
+        { status: 401 }
+      );
+    }
+
     const body = await req.json();
     const { title, theme, initialItem } = body;
 
@@ -82,6 +97,7 @@ export async function POST(req: NextRequest) {
 
     const card = await db.card.create({
       data: {
+        userId: user.id,
         title: title.trim(),
         theme: cardTheme,
         items: initialItem
