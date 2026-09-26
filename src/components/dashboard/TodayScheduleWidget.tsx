@@ -17,6 +17,7 @@ import {
   CheckCircle2,
 } from "lucide-react";
 import Link from "next/link";
+import { WeeklyScheduleModal } from "./WeeklyScheduleModal";
 
 const DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
@@ -79,6 +80,7 @@ export function TodayScheduleWidget() {
 
   // Modal State
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isWeeklyModalOpen, setIsWeeklyModalOpen] = useState(false);
   const [formDay, setFormDay] = useState(activeDay);
   const [formSubject, setFormSubject] = useState("");
   const [formCode, setFormCode] = useState("");
@@ -243,6 +245,16 @@ export function TodayScheduleWidget() {
         </div>
 
         <div className="flex items-center gap-2">
+          <button
+            onClick={() => setIsWeeklyModalOpen(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-indigo-200 dark:border-indigo-800 bg-indigo-50/70 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-900/60 font-bold text-xs transition-all active:scale-95 shadow-xs"
+            title="View entire week timetable and export as PNG or PDF"
+          >
+            <Calendar className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Weekly Grid & Export</span>
+            <span className="sm:hidden">Weekly</span>
+          </button>
+
           {isAdmin ? (
             <button
               onClick={() => handleOpenAddModal(activeDay)}
@@ -709,6 +721,14 @@ export function TodayScheduleWidget() {
             </form>
           </div>
         </div>
+      )}
+
+      {/* Weekly Schedule & Export Modal */}
+      {isWeeklyModalOpen && (
+        <WeeklyScheduleModal
+          isOpen={isWeeklyModalOpen}
+          onClose={() => setIsWeeklyModalOpen(false)}
+        />
       )}
     </div>
   );

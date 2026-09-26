@@ -15,6 +15,7 @@ import {
   Loader2,
   UploadCloud,
 } from "lucide-react";
+import { compressImageIfNeeded } from "@/lib/compressImage";
 
 interface CreateCardModalProps {
   isOpen: boolean;
@@ -36,6 +37,7 @@ export function CreateCardModal({
   const [initialText, setInitialText] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
+  const [compressing, setCompressing] = useState(false);
 
   if (!isOpen) return null;
 
@@ -56,8 +58,18 @@ export function CreateCardModal({
 
       // Upload file if selected
       if (file) {
+        let fileToUpload = file;
+        if (file.type.startsWith("image/")) {
+          setCompressing(true);
+          try {
+            fileToUpload = await compressImageIfNeeded(file);
+          } finally {
+            setCompressing(false);
+          }
+        }
+
         const formData = new FormData();
-        formData.append("file", file);
+        formData.append("file", fileToUpload);
 
         const uploadRes = await fetch("/api/upload", {
           method: "POST",
@@ -66,8 +78,8 @@ export function CreateCardModal({
 
         if (uploadRes.ok) {
           const uploadData = await uploadRes.json();
-          const mime = (file.type || "").toLowerCase();
-          const name = (file.name || "").toLowerCase();
+          const mime = (fileToUpload.type || file.type || "").toLowerCase();
+          const name = (fileToUpload.name || file.name || "").toLowerCase();
 
           let itemType: "text" | "link" | "image" | "pdf" | "file" = "file";
           const isImg =
@@ -267,11 +279,19 @@ export function CreateCardModal({
           {/* Submit Button */}
           <button
             type="submit"
-            disabled={loading || !title.trim()}
+            disabled={loading || compressing || !title.trim()}
             className="w-full py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-md shadow-indigo-500/25 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {loading ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
+            {compressing ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span>Optimizing Image...</span>
+              </>
+            ) : loading ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span>Creating Card...</span>
+              </>
             ) : (
               <>
                 <Plus className="w-4 h-4 stroke-[2.5]" />

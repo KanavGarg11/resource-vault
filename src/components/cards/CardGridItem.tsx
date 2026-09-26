@@ -12,8 +12,11 @@ import {
   ExternalLink,
   ChevronRight,
   Loader2,
+  Share2,
+  Globe,
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
+import { ShareCardModal } from "./ShareCardModal";
 
 interface CardGridItemProps {
   card: Card;
@@ -36,6 +39,10 @@ function isImageItem(item: {
 export function CardGridItem({ card, onClick, onDelete }: CardGridItemProps) {
   const { isAdmin } = useAdmin();
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isShareOpen, setIsShareOpen] = useState(false);
+  const [isPublic, setIsPublic] = useState(card.isPublic ?? false);
+  const [shareToken, setShareToken] = useState(card.shareToken);
+
   const theme = THEME_CONFIG[card.theme] || THEME_CONFIG.personal;
   const items = card.items || [];
   const itemCount = card._count?.items ?? items.length;
@@ -72,22 +79,51 @@ export function CardGridItem({ card, onClick, onDelete }: CardGridItemProps) {
       {/* Top Header */}
       <div className="p-4 sm:p-5 pb-2 shrink-0">
         <div className="flex items-center justify-between gap-2 mb-2">
-          {/* Theme Pill Badge */}
-          <span
-            className={`text-[10px] font-bold px-2.5 py-0.8 rounded-lg border uppercase tracking-wider ${theme.bg} ${theme.border} ${theme.color}`}
-          >
-            {theme.label}
-          </span>
+          {/* Theme Pill Badge & Share Status */}
+          <div className="flex items-center gap-1.5">
+            <span
+              className={`text-[10px] font-bold px-2.5 py-0.8 rounded-lg border uppercase tracking-wider ${theme.bg} ${theme.border} ${theme.color}`}
+            >
+              {theme.label}
+            </span>
+            {isPublic && (
+              <span
+                className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-bold bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800"
+                title="Public Link Active"
+              >
+                <Globe className="w-2.5 h-2.5" />
+                <span>Shared</span>
+              </span>
+            )}
+          </div>
 
           <div className="flex items-center gap-1.5 text-[11px] text-slate-400">
             <span>{formatDistanceToNow(new Date(card.updatedAt), { addSuffix: true })}</span>
+
+            {isAdmin && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setIsShareOpen(true);
+                }}
+                className={`p-1 rounded-lg opacity-0 group-hover:opacity-100 transition-all ml-1 ${
+                  isPublic
+                    ? "text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/60"
+                    : "text-slate-300 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-950/60"
+                }`}
+                title={isPublic ? "Shared Link Active" : "Share Card Link"}
+              >
+                <Share2 className="w-3.5 h-3.5" />
+              </button>
+            )}
 
             {isAdmin && onDelete && (
               <button
                 type="button"
                 onClick={handleDelete}
                 disabled={isDeleting}
-                className="p-1 rounded-lg text-slate-300 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/60 opacity-0 group-hover:opacity-100 transition-all ml-1 disabled:opacity-50"
+                className="p-1 rounded-lg text-slate-300 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/60 opacity-0 group-hover:opacity-100 transition-all disabled:opacity-50"
                 title="Delete Card"
               >
                 {isDeleting ? (
@@ -191,6 +227,24 @@ export function CardGridItem({ card, onClick, onDelete }: CardGridItemProps) {
           <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
         </span>
       </div>
+
+      {/* Share Card Modal */}
+      {isShareOpen && (
+        <div onClick={(e) => e.stopPropagation()}>
+          <ShareCardModal
+            cardId={card.id}
+            cardTitle={card.title}
+            isOpen={isShareOpen}
+            initialIsPublic={isPublic}
+            initialShareToken={shareToken}
+            onClose={() => setIsShareOpen(false)}
+            onShareUpdated={(newPublic, newToken) => {
+              setIsPublic(newPublic);
+              setShareToken(newToken);
+            }}
+          />
+        </div>
+      )}
     </div>
   );
 }

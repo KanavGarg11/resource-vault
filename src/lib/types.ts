@@ -24,6 +24,8 @@ export interface Card {
   title: string;
   theme: CardTheme;
   isPinned: boolean;
+  isPublic?: boolean;
+  shareToken?: string | null;
   createdAt: string | Date;
   updatedAt: string | Date;
   items?: CardItem[];

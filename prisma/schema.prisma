@@ -65,6 +65,8 @@ model Card {
   title     String     // Bold title on top
   theme     String     // 'study' | 'study-to-do' | 'schedules' | 'to-do' | 'personal'
   isPinned  Boolean    @default(false)
+  isPublic  Boolean    @default(false)
+  shareToken String?   @unique
   createdAt DateTime   @default(now())
   updatedAt DateTime   @updatedAt
   items     CardItem[]

@@ -22,8 +22,11 @@ import {
   Sparkles,
   Loader2,
   Lock,
+  Share2,
 } from "lucide-react";
 import { format, formatDistanceToNow } from "date-fns";
+import { compressImageIfNeeded } from "@/lib/compressImage";
+import { ShareCardModal } from "./ShareCardModal";
 
 function isImageItem(item: {
   type?: string;
@@ -57,6 +60,8 @@ export function CardThreadModal({
   const [inputText, setInputText] = useState("");
   const [attachedFile, setAttachedFile] = useState<File | null>(null);
   const [sending, setSending] = useState(false);
+  const [compressing, setCompressing] = useState(false);
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [lightboxImage, setLightboxImage] = useState<string | null>(null);
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
@@ -120,8 +125,18 @@ export function CardThreadModal({
 
       // 1. Upload attached file if present
       if (attachedFile) {
+        let fileToUpload = attachedFile;
+        if (attachedFile.type.startsWith("image/")) {
+          setCompressing(true);
+          try {
+            fileToUpload = await compressImageIfNeeded(attachedFile);
+          } finally {
+            setCompressing(false);
+          }
+        }
+
         const formData = new FormData();
-        formData.append("file", attachedFile);
+        formData.append("file", fileToUpload);
 
         const uploadRes = await fetch("/api/upload", {
           method: "POST",
@@ -309,6 +324,20 @@ export function CardThreadModal({
           </div>
 
           <div className="flex items-center gap-1.5 shrink-0">
+            {isAdmin && (
+              <button
+                onClick={() => setIsShareModalOpen(true)}
+                className={`p-2 rounded-xl transition-colors ${
+                  card?.isPublic
+                    ? "text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 hover:bg-emerald-100 dark:hover:bg-emerald-900/60"
+                    : "text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-950/40"
+                }`}
+                title={card?.isPublic ? "Shared (Public Link Active)" : "Share Card Link"}
+              >
+                <Share2 className="w-4 h-4" />
+              </button>
+            )}
+
             {isAdmin && (
               <button
                 onClick={handleDeleteCard}
@@ -679,11 +708,11 @@ export function CardThreadModal({
 
                 <button
                   type="submit"
-                  disabled={sending || (!inputText.trim() && !attachedFile)}
+                  disabled={sending || compressing || (!inputText.trim() && !attachedFile)}
                   className="p-2.5 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white disabled:opacity-40 disabled:cursor-not-allowed shadow-md shadow-indigo-500/20 transition-all active:scale-95"
-                  title="Send to Card"
+                  title={compressing ? "Optimizing image..." : "Send to Card"}
                 >
-                  {sending ? (
+                  {compressing || sending ? (
                     <Loader2 className="w-4 h-4 animate-spin" />
                   ) : (
                     <Send className="w-4 h-4" />
@@ -694,6 +723,22 @@ export function CardThreadModal({
           )}
         </div>
       </div>
+
+      {/* Share Card Modal */}
+      {isShareModalOpen && card && (
+        <ShareCardModal
+          cardId={card.id}
+          cardTitle={card.title}
+          isOpen={isShareModalOpen}
+          initialIsPublic={card.isPublic}
+          initialShareToken={card.shareToken}
+          onClose={() => setIsShareModalOpen(false)}
+          onShareUpdated={(isPub, token) => {
+            setCard((prev) => (prev ? { ...prev, isPublic: isPub, shareToken: token } : prev));
+            onCardUpdated();
+          }}
+        />
+      )}
 
       {/* Image Lightbox */}
       {lightboxImage && (
