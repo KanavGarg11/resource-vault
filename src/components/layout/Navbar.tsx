@@ -15,8 +15,10 @@ import {
   LogIn,
   Menu,
   X,
+  Download,
 } from "lucide-react";
 import { useState } from "react";
+import { usePwa } from "@/components/providers/PwaProvider";
 
 const THEME_NAV_ITEMS = [
   { label: "Dashboard", href: "/", icon: Compass },
@@ -30,6 +32,7 @@ const THEME_NAV_ITEMS = [
 export function Navbar() {
   const pathname = usePathname();
   const { user, logout } = useAdmin();
+  const { isInstallable, isInstalled, promptInstall } = usePwa();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   return (
@@ -115,6 +118,17 @@ export function Navbar() {
             </Link>
           )}
 
+          {isInstallable && !isInstalled && (
+            <button
+              onClick={promptInstall}
+              className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200 dark:border-indigo-800 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-900/60 text-xs font-bold transition-all active:scale-95"
+              title="Install LifeVault App"
+            >
+              <Download className="w-3.5 h-3.5" />
+              <span>Install App</span>
+            </button>
+          )}
+
           <ThemeToggle />
 
           {/* Mobile menu trigger */}
@@ -131,6 +145,18 @@ export function Navbar() {
       {/* Mobile Drawer Menu */}
       {mobileMenuOpen && (
         <div className="lg:hidden border-t border-slate-200 dark:border-slate-800 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl px-4 py-3 space-y-1 shadow-lg animate-in slide-in-from-top-2 duration-150">
+          {isInstallable && !isInstalled && (
+            <button
+              onClick={() => {
+                setMobileMenuOpen(false);
+                promptInstall();
+              }}
+              className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200 dark:border-indigo-800 mb-2"
+            >
+              <Download className="w-4 h-4" />
+              <span>Install LifeVault App</span>
+            </button>
+          )}
           {THEME_NAV_ITEMS.map((item) => {
             const Icon = item.icon;
             const isActive = pathname === item.href;
