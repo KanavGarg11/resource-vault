@@ -67,11 +67,72 @@ export const authOptions: NextAuthOptions = {
   },
   pages: {
     signIn: "/login",
+    error: "/login",
   },
   callbacks: {
-    async jwt({ token, user, account }) {
+    async signIn({ user, account, profile }) {
+      if (account?.provider === "google" && user.email) {
+        try {
+          const email = user.email.toLowerCase().trim();
+          const existingUser = await db.user.findUnique({
+            where: { email },
+          });
+
+          if (existingUser) {
+            // Ensure account link exists in Prisma Account table
+            const existingAccount = await db.account.findUnique({
+              where: {
+                provider_providerAccountId: {
+                  provider: account.provider,
+                  providerAccountId: account.providerAccountId,
+                },
+              },
+            });
+
+            if (!existingAccount) {
+              await db.account.create({
+                data: {
+                  userId: existingUser.id,
+                  type: account.type,
+                  provider: account.provider,
+                  providerAccountId: account.providerAccountId,
+                  access_token: account.access_token || null,
+                  refresh_token: account.refresh_token || null,
+                  expires_at: account.expires_at || null,
+                  token_type: account.token_type || null,
+                  scope: account.scope || null,
+                  id_token: account.id_token || null,
+                },
+              });
+            }
+
+            // Update user image or name if available from Google
+            if ((!existingUser.image && user.image) || (!existingUser.name && user.name)) {
+              await db.user.update({
+                where: { id: existingUser.id },
+                data: {
+                  image: existingUser.image || user.image,
+                  name: existingUser.name || user.name,
+                },
+              });
+            }
+          }
+        } catch (e) {
+          console.error("Error linking Google account in signIn callback:", e);
+        }
+      }
+      return true;
+    },
+    async jwt({ token, user }) {
       if (user) {
         token.id = user.id;
+      } else if (token.email && !token.id) {
+        const dbUser = await db.user.findUnique({
+          where: { email: token.email },
+        });
+        if (dbUser) {
+          token.id = dbUser.id;
+        }
       }
       return token;
     },
