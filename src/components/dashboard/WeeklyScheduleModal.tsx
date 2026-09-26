@@ -139,7 +139,7 @@ export function WeeklyScheduleModal({ isOpen, onClose }: WeeklyScheduleModalProp
 
   return (
     <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-md flex items-center justify-center p-2 sm:p-4 md:p-6 animate-in fade-in duration-150">
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl max-w-5xl w-full h-[92vh] flex flex-col shadow-2xl overflow-hidden animate-in zoom-in-95 duration-150">
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl max-w-6xl w-full h-[92vh] flex flex-col shadow-2xl overflow-hidden animate-in zoom-in-95 duration-150">
         {/* Header Controls */}
         <div className="px-5 py-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-900/80 backdrop-blur-md flex flex-wrap items-center justify-between gap-3 shrink-0 print:hidden">
           <div className="flex items-center gap-3">
@@ -253,10 +253,10 @@ export function WeeklyScheduleModal({ isOpen, onClose }: WeeklyScheduleModalProp
               {/* THE EXPORT CANVAS */}
               <div
                 ref={exportRef}
-                className={`bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 sm:p-8 shadow-xl transition-all ${
+                className={`bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-5 sm:p-7 shadow-xl transition-all ${
                   viewMode === "wallpaper"
                     ? "max-w-md w-full"
-                    : "w-full max-w-4xl"
+                    : "w-full min-w-full md:min-w-[780px]"
                 }`}
               >
                 {/* Schedule Banner Brand */}
@@ -280,69 +280,73 @@ export function WeeklyScheduleModal({ isOpen, onClose }: WeeklyScheduleModalProp
                   </span>
                 </div>
 
-                {/* View Mode 1: Table Grid */}
+                {/* View Mode 1: Table Grid (Monday classes left-to-right, Tuesday classes left-to-right) */}
                 {viewMode === "grid" && (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  <div className="space-y-3">
                     {DAYS.map((day) => {
                       const dayClasses = entriesByDay[day];
                       return (
                         <div
                           key={day}
-                          className="bg-slate-50 dark:bg-slate-800/50 rounded-2xl p-4 border border-slate-200/70 dark:border-slate-700/60 flex flex-col justify-between"
+                          className="flex flex-col md:flex-row items-stretch gap-3 p-3.5 sm:p-4 rounded-2xl bg-slate-50/80 dark:bg-slate-800/40 border border-slate-200/80 dark:border-slate-700/60"
                         >
-                          <div>
-                            <div className="flex items-center justify-between mb-3 pb-2 border-b border-slate-200/60 dark:border-slate-700/60">
-                              <span className="text-xs font-extrabold uppercase tracking-wider text-slate-800 dark:text-slate-200">
-                                {day}
-                              </span>
-                              <span className="text-[10px] font-semibold text-slate-400">
-                                {dayClasses.length} {dayClasses.length === 1 ? "class" : "classes"}
-                              </span>
-                            </div>
+                          {/* Day Column (Left) */}
+                          <div className="w-full md:w-36 shrink-0 flex md:flex-col items-center md:items-start justify-between md:justify-center pr-0 md:pr-4 md:border-r border-slate-200/80 dark:border-slate-700/60">
+                            <span className="text-sm font-extrabold uppercase tracking-wider text-slate-900 dark:text-white">
+                              {day}
+                            </span>
+                            <span className="text-[11px] font-semibold text-slate-400 mt-0.5">
+                              {dayClasses.length} {dayClasses.length === 1 ? "class" : "classes"}
+                            </span>
+                          </div>
 
+                          {/* Classes Flow: Left to Right */}
+                          <div className="flex-1 min-w-0">
                             {dayClasses.length === 0 ? (
-                              <p className="text-xs text-slate-400 italic py-4 text-center">
-                                No classes scheduled
-                              </p>
+                              <div className="h-full min-h-[58px] flex items-center justify-center md:justify-start px-4 rounded-xl border border-dashed border-slate-200 dark:border-slate-700/80 text-xs text-slate-400 italic">
+                                No classes scheduled • Free day
+                              </div>
                             ) : (
-                              <div className="space-y-2.5">
+                              <div className="flex flex-wrap md:flex-nowrap gap-2.5 overflow-x-auto pb-1 items-stretch">
                                 {dayClasses.map((item) => {
                                   const colorClass = getSubjectColorClass(item.subject);
                                   return (
                                     <div
                                       key={item.id}
-                                      className={`p-2.5 rounded-xl border-l-4 ${colorClass} bg-white dark:bg-slate-800 shadow-2xs`}
+                                      className={`min-w-[170px] md:min-w-[200px] flex-1 p-3 rounded-xl border-l-4 ${colorClass} bg-white dark:bg-slate-800 shadow-2xs flex flex-col justify-between`}
                                     >
-                                      <div className="flex items-start justify-between gap-1">
-                                        <p className="text-xs font-bold text-slate-900 dark:text-white leading-tight">
-                                          {item.subject}
-                                        </p>
-                                        {item.code && (
-                                          <span className="text-[9px] font-mono opacity-80 uppercase">
-                                            {item.code}
-                                          </span>
-                                        )}
-                                      </div>
+                                      <div>
+                                        <div className="flex items-start justify-between gap-1.5">
+                                          <p className="text-xs font-extrabold text-slate-900 dark:text-white leading-tight line-clamp-1">
+                                            {item.subject}
+                                          </p>
+                                          {item.code && (
+                                            <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 uppercase shrink-0">
+                                              {item.code}
+                                            </span>
+                                          )}
+                                        </div>
 
-                                      <div className="flex items-center gap-1.5 text-[10px] text-slate-500 dark:text-slate-400 mt-1 font-mono">
-                                        <Clock className="w-3 h-3 text-slate-400 shrink-0" />
-                                        <span>
-                                          {item.startTime} – {item.endTime}
-                                        </span>
+                                        <div className="flex items-center gap-1.5 text-[10px] font-mono font-medium text-slate-500 dark:text-slate-400 mt-1.5">
+                                          <Clock className="w-3 h-3 text-slate-400 shrink-0" />
+                                          <span>
+                                            {item.startTime} – {item.endTime}
+                                          </span>
+                                        </div>
                                       </div>
 
                                       {(item.room || item.professor) && (
-                                        <div className="flex items-center gap-2 text-[10px] text-slate-400 mt-1 flex-wrap">
+                                        <div className="flex items-center gap-2 text-[10px] text-slate-400 mt-2 pt-1.5 border-t border-slate-100 dark:border-slate-700/50 flex-wrap">
                                           {item.room && (
-                                            <span className="flex items-center gap-0.5">
-                                              <MapPin className="w-2.5 h-2.5" />
+                                            <span className="flex items-center gap-1 font-medium text-slate-600 dark:text-slate-300">
+                                              <MapPin className="w-2.5 h-2.5 text-indigo-500" />
                                               <span>{item.room}</span>
                                             </span>
                                           )}
                                           {item.professor && (
-                                            <span className="flex items-center gap-0.5">
-                                              <User className="w-2.5 h-2.5" />
-                                              <span>{item.professor}</span>
+                                            <span className="flex items-center gap-1 text-slate-500 dark:text-slate-400">
+                                              <User className="w-2.5 h-2.5 text-slate-400" />
+                                              <span className="truncate max-w-[90px]">{item.professor}</span>
                                             </span>
                                           )}
                                         </div>
