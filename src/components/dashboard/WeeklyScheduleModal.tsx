@@ -11,8 +11,6 @@ import {
   Clock,
   MapPin,
   User,
-  Smartphone,
-  LayoutGrid,
   Loader2,
   Sparkles,
   Check,
@@ -48,7 +46,6 @@ export function WeeklyScheduleModal({ isOpen, onClose }: WeeklyScheduleModalProp
   const [entries, setEntries] = useState<TimetableEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState(false);
-  const [viewMode, setViewMode] = useState<"grid" | "wallpaper">("grid");
   const [downloadSuccess, setDownloadSuccess] = useState(false);
 
   const exportRef = useRef<HTMLDivElement>(null);
@@ -151,44 +148,17 @@ export function WeeklyScheduleModal({ isOpen, onClose }: WeeklyScheduleModalProp
                 Weekly Timetable & Export
               </h3>
               <p className="text-xs text-slate-400">
-                {totalClasses} class{totalClasses === 1 ? "" : "es"} across Mon–Sat • Ready to print or set as wallpaper
+                {totalClasses} class{totalClasses === 1 ? "" : "es"} across Mon–Sat • Ready to export or print
               </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-2 flex-wrap">
-            {/* View Mode Toggle */}
-            <div className="flex items-center bg-slate-200/70 dark:bg-slate-800 p-1 rounded-xl">
-              <button
-                onClick={() => setViewMode("grid")}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                  viewMode === "grid"
-                    ? "bg-white dark:bg-slate-700 text-indigo-600 dark:text-white shadow-xs"
-                    : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
-                }`}
-              >
-                <LayoutGrid className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">Weekly Grid</span>
-              </button>
-
-              <button
-                onClick={() => setViewMode("wallpaper")}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                  viewMode === "wallpaper"
-                    ? "bg-white dark:bg-slate-700 text-indigo-600 dark:text-white shadow-xs"
-                    : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
-                }`}
-              >
-                <Smartphone className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">Wallpaper / Mobile</span>
-              </button>
-            </div>
-
-            {/* Export Actions */}
+          <div className="flex items-center gap-2">
+            {/* 1. Export PNG Button */}
             <button
               onClick={handleExportPng}
               disabled={exporting || loading || totalClasses === 0}
-              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-md shadow-indigo-500/20 transition-all active:scale-95 disabled:opacity-50"
+              className="inline-flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-md shadow-indigo-500/20 transition-all active:scale-95 disabled:opacity-50"
               title="Download schedule as high-resolution PNG image"
             >
               {exporting ? (
@@ -209,19 +179,23 @@ export function WeeklyScheduleModal({ isOpen, onClose }: WeeklyScheduleModalProp
               )}
             </button>
 
+            {/* 2. Print icon button */}
             <button
               onClick={handlePrint}
               disabled={loading || totalClasses === 0}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-semibold transition-colors disabled:opacity-50"
+              className="inline-flex items-center justify-center p-2 sm:px-3 sm:py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-semibold transition-colors disabled:opacity-50"
               title="Print schedule or save as PDF"
+              aria-label="Print schedule"
             >
-              <Printer className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Print / PDF</span>
+              <Printer className="w-4 h-4" />
+              <span className="hidden sm:inline ml-1.5">Print / PDF</span>
             </button>
 
+            {/* 3. Cross icon for closing */}
             <button
               onClick={onClose}
-              className="p-1.5 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors ml-1"
+              className="p-1.5 sm:p-2 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors ml-0.5"
+              title="Close Modal"
               aria-label="Close"
             >
               <X className="w-5 h-5" />
@@ -253,11 +227,7 @@ export function WeeklyScheduleModal({ isOpen, onClose }: WeeklyScheduleModalProp
               {/* THE EXPORT CANVAS */}
               <div
                 ref={exportRef}
-                className={`bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-5 sm:p-7 shadow-xl transition-all ${
-                  viewMode === "wallpaper"
-                    ? "max-w-md w-full"
-                    : "w-full min-w-full md:min-w-[780px]"
-                }`}
+                className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-5 sm:p-7 shadow-xl transition-all w-full min-w-full md:min-w-[780px]"
               >
                 {/* Schedule Banner Brand */}
                 <div className="flex items-center justify-between pb-5 mb-5 border-b border-slate-200/80 dark:border-slate-800">
@@ -280,145 +250,86 @@ export function WeeklyScheduleModal({ isOpen, onClose }: WeeklyScheduleModalProp
                   </span>
                 </div>
 
-                {/* View Mode 1: Table Grid (Monday classes left-to-right, Tuesday classes left-to-right) */}
-                {viewMode === "grid" && (
-                  <div className="space-y-3">
-                    {DAYS.map((day) => {
-                      const dayClasses = entriesByDay[day];
-                      return (
-                        <div
-                          key={day}
-                          className="flex flex-col md:flex-row items-stretch gap-3 p-3.5 sm:p-4 rounded-2xl bg-slate-50/80 dark:bg-slate-800/40 border border-slate-200/80 dark:border-slate-700/60"
-                        >
-                          {/* Day Column (Left) */}
-                          <div className="w-full md:w-36 shrink-0 flex md:flex-col items-center md:items-start justify-between md:justify-center pr-0 md:pr-4 md:border-r border-slate-200/80 dark:border-slate-700/60">
-                            <span className="text-sm font-extrabold uppercase tracking-wider text-slate-900 dark:text-white">
-                              {day}
-                            </span>
-                            <span className="text-[11px] font-semibold text-slate-400 mt-0.5">
-                              {dayClasses.length} {dayClasses.length === 1 ? "class" : "classes"}
-                            </span>
-                          </div>
+                {/* Table Grid (Monday classes left-to-right, Tuesday classes left-to-right) */}
+                <div className="space-y-3">
+                  {DAYS.map((day) => {
+                    const dayClasses = entriesByDay[day];
+                    return (
+                      <div
+                        key={day}
+                        className="flex flex-col md:flex-row items-stretch gap-3 p-3.5 sm:p-4 rounded-2xl bg-slate-50/80 dark:bg-slate-800/40 border border-slate-200/80 dark:border-slate-700/60"
+                      >
+                        {/* Day Column (Left) */}
+                        <div className="w-full md:w-36 shrink-0 flex md:flex-col items-center md:items-start justify-between md:justify-center pr-0 md:pr-4 md:border-r border-slate-200/80 dark:border-slate-700/60">
+                          <span className="text-sm font-extrabold uppercase tracking-wider text-slate-900 dark:text-white">
+                            {day}
+                          </span>
+                          <span className="text-[11px] font-semibold text-slate-400 mt-0.5">
+                            {dayClasses.length} {dayClasses.length === 1 ? "class" : "classes"}
+                          </span>
+                        </div>
 
-                          {/* Classes Flow: Left to Right */}
-                          <div className="flex-1 min-w-0">
-                            {dayClasses.length === 0 ? (
-                              <div className="h-full min-h-[58px] flex items-center justify-center md:justify-start px-4 rounded-xl border border-dashed border-slate-200 dark:border-slate-700/80 text-xs text-slate-400 italic">
-                                No classes scheduled • Free day
-                              </div>
-                            ) : (
-                              <div className="flex flex-wrap md:flex-nowrap gap-2.5 overflow-x-auto pb-1 items-stretch">
-                                {dayClasses.map((item) => {
-                                  const colorClass = getSubjectColorClass(item.subject);
-                                  return (
-                                    <div
-                                      key={item.id}
-                                      className={`min-w-[170px] md:min-w-[200px] flex-1 p-3 rounded-xl border-l-4 ${colorClass} bg-white dark:bg-slate-800 shadow-2xs flex flex-col justify-between`}
-                                    >
-                                      <div>
-                                        <div className="flex items-start justify-between gap-1.5">
-                                          <p className="text-xs font-extrabold text-slate-900 dark:text-white leading-tight line-clamp-1">
-                                            {item.subject}
-                                          </p>
-                                          {item.code && (
-                                            <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 uppercase shrink-0">
-                                              {item.code}
-                                            </span>
-                                          )}
-                                        </div>
-
-                                        <div className="flex items-center gap-1.5 text-[10px] font-mono font-medium text-slate-500 dark:text-slate-400 mt-1.5">
-                                          <Clock className="w-3 h-3 text-slate-400 shrink-0" />
-                                          <span>
-                                            {item.startTime} – {item.endTime}
+                        {/* Classes Flow: Left to Right */}
+                        <div className="flex-1 min-w-0">
+                          {dayClasses.length === 0 ? (
+                            <div className="h-full min-h-[58px] flex items-center justify-center md:justify-start px-4 rounded-xl border border-dashed border-slate-200 dark:border-slate-700/80 text-xs text-slate-400 italic">
+                              No classes scheduled • Free day
+                            </div>
+                          ) : (
+                            <div className="flex flex-wrap md:flex-nowrap gap-2.5 overflow-x-auto pb-1 items-stretch">
+                              {dayClasses.map((item) => {
+                                const colorClass = getSubjectColorClass(item.subject);
+                                return (
+                                  <div
+                                    key={item.id}
+                                    className={`min-w-[170px] md:min-w-[200px] flex-1 p-3 rounded-xl border-l-4 ${colorClass} bg-white dark:bg-slate-800 shadow-2xs flex flex-col justify-between`}
+                                  >
+                                    <div>
+                                      <div className="flex items-start justify-between gap-1.5">
+                                        <p className="text-xs font-extrabold text-slate-900 dark:text-white leading-tight line-clamp-1">
+                                          {item.subject}
+                                        </p>
+                                        {item.code && (
+                                          <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 uppercase shrink-0">
+                                            {item.code}
                                           </span>
-                                        </div>
+                                        )}
                                       </div>
 
-                                      {(item.room || item.professor) && (
-                                        <div className="flex items-center gap-2 text-[10px] text-slate-400 mt-2 pt-1.5 border-t border-slate-100 dark:border-slate-700/50 flex-wrap">
-                                          {item.room && (
-                                            <span className="flex items-center gap-1 font-medium text-slate-600 dark:text-slate-300">
-                                              <MapPin className="w-2.5 h-2.5 text-indigo-500" />
-                                              <span>{item.room}</span>
-                                            </span>
-                                          )}
-                                          {item.professor && (
-                                            <span className="flex items-center gap-1 text-slate-500 dark:text-slate-400">
-                                              <User className="w-2.5 h-2.5 text-slate-400" />
-                                              <span className="truncate max-w-[90px]">{item.professor}</span>
-                                            </span>
-                                          )}
-                                        </div>
-                                      )}
-                                    </div>
-                                  );
-                                })}
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-
-                {/* View Mode 2: Phone Wallpaper Layout */}
-                {viewMode === "wallpaper" && (
-                  <div className="space-y-4">
-                    {DAYS.map((day) => {
-                      const dayClasses = entriesByDay[day];
-                      if (dayClasses.length === 0) return null;
-
-                      return (
-                        <div key={day} className="space-y-1.5">
-                          <div className="flex items-center justify-between text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider px-1">
-                            <span>{day}</span>
-                            <span>{dayClasses.length} classes</span>
-                          </div>
-
-                          <div className="space-y-1.5">
-                            {dayClasses.map((item) => {
-                              const colorClass = getSubjectColorClass(item.subject);
-                              return (
-                                <div
-                                  key={item.id}
-                                  className={`p-2.5 rounded-xl border-l-4 ${colorClass} bg-slate-50 dark:bg-slate-800/80 flex items-center justify-between gap-3`}
-                                >
-                                  <div className="min-w-0">
-                                    <div className="flex items-center gap-1.5">
-                                      <p className="text-xs font-bold text-slate-900 dark:text-white truncate">
-                                        {item.subject}
-                                      </p>
-                                      {item.code && (
-                                        <span className="text-[9px] font-mono text-slate-400">
-                                          ({item.code})
+                                      <div className="flex items-center gap-1.5 text-[10px] font-mono font-medium text-slate-500 dark:text-slate-400 mt-1.5">
+                                        <Clock className="w-3 h-3 text-slate-400 shrink-0" />
+                                        <span>
+                                          {item.startTime} – {item.endTime}
                                         </span>
-                                      )}
+                                      </div>
                                     </div>
-                                    <div className="flex items-center gap-2 text-[10px] text-slate-400 mt-0.5">
-                                      {item.room && <span>{item.room}</span>}
-                                      {item.professor && <span>• {item.professor}</span>}
-                                    </div>
-                                  </div>
 
-                                  <div className="text-right shrink-0">
-                                    <span className="text-[11px] font-extrabold font-mono text-slate-800 dark:text-slate-200">
-                                      {item.startTime}
-                                    </span>
-                                    <span className="text-[9px] text-slate-400 block font-mono">
-                                      to {item.endTime}
-                                    </span>
+                                    {(item.room || item.professor) && (
+                                      <div className="flex items-center gap-2 text-[10px] text-slate-400 mt-2 pt-1.5 border-t border-slate-100 dark:border-slate-700/50 flex-wrap">
+                                        {item.room && (
+                                          <span className="flex items-center gap-1 font-medium text-slate-600 dark:text-slate-300">
+                                            <MapPin className="w-2.5 h-2.5 text-indigo-500" />
+                                            <span>{item.room}</span>
+                                          </span>
+                                        )}
+                                        {item.professor && (
+                                          <span className="flex items-center gap-1 text-slate-500 dark:text-slate-400">
+                                            <User className="w-2.5 h-2.5 text-slate-400" />
+                                            <span className="truncate max-w-[90px]">{item.professor}</span>
+                                          </span>
+                                        )}
+                                      </div>
+                                    )}
                                   </div>
-                                </div>
-                              );
-                            })}
-                          </div>
+                                );
+                              })}
+                            </div>
+                          )}
                         </div>
-                      );
-                    })}
-                  </div>
-                )}
+                      </div>
+                    );
+                  })}
+                </div>
 
                 {/* Footer Brand watermark */}
                 <div className="mt-6 pt-4 border-t border-slate-200/80 dark:border-slate-800 flex items-center justify-between text-[10px] text-slate-400">

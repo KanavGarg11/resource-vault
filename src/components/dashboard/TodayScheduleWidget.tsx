@@ -254,7 +254,7 @@ export function TodayScheduleWidget() {
           >
             <Calendar className="w-3.5 h-3.5 text-indigo-400" />
             <span className="hidden sm:inline">Weekly Grid & Export</span>
-            <span className="sm:hidden">Weekly</span>
+            <span className="sm:hidden">Export</span>
           </button>
 
           {isAdmin ? (
