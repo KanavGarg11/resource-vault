@@ -134,7 +134,7 @@ export default function ThemePage() {
           className="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-md shadow-indigo-500/20 transition-all self-start sm:self-auto shrink-0 active:scale-95"
         >
           <Plus className="w-4 h-4 stroke-[2.5]" />
-          <span>+ Add {themeConfig.label} Card</span>
+          <span>Add {themeConfig.label} Card</span>
         </button>
       </div>
 

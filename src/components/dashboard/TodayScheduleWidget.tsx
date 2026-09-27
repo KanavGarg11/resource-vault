@@ -263,7 +263,7 @@ export function TodayScheduleWidget() {
               className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-3 py-2 sm:py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs shadow-md shadow-indigo-600/30 transition-all active:scale-95"
             >
               <Plus className="w-3.5 h-3.5 stroke-[2.5] shrink-0" />
-              <span>+ Add Class</span>
+              <span>Add Class</span>
             </button>
           ) : (
             <button
@@ -417,7 +417,7 @@ export function TodayScheduleWidget() {
                 className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs shadow-sm transition-all shrink-0 active:scale-95"
               >
                 <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
-                <span>+ Add Class</span>
+                <span>Add Class</span>
               </button>
             ) : (
               <button

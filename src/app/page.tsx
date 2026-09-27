@@ -144,7 +144,7 @@ export default function HomePage() {
             className="flex items-center justify-center gap-2 px-5 py-2.5 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-md shadow-indigo-500/20 transition-all active:scale-95 shrink-0"
           >
             <Plus className="w-4 h-4 stroke-[2.5]" />
-            <span>{user ? "+ Add a Card" : "Sign In to Add Cards"}</span>
+            <span>{user ? "Add a Card" : "Sign In to Add Cards"}</span>
           </button>
         </div>
       </section>
@@ -209,7 +209,7 @@ export default function HomePage() {
             <p className="text-xs text-slate-400 max-w-sm mx-auto">
               {searchQuery
                 ? "Try searching for a different keyword or topic."
-                : "Click '+ Add a Card' above to create your first card (e.g. OS Lecture Notes, Shopping Wishlist)."}
+                : "Click 'Add a Card' above to create your first card (e.g. OS Lecture Notes, Shopping Wishlist)."}
             </p>
           </div>
         ) : (
