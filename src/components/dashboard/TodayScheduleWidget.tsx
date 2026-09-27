@@ -279,53 +279,53 @@ export function TodayScheduleWidget() {
       {/* --- Option A: Smart Live Status Banner --- */}
       {/* 1. Live Class Happening Right Now */}
       {isViewingToday && liveClass && (
-        <div className="relative z-10 p-3.5 sm:p-4 rounded-2xl bg-gradient-to-r from-emerald-950/60 via-slate-900/80 to-indigo-950/50 border border-emerald-500/40 shadow-lg shadow-emerald-950/50 backdrop-blur-md flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-in fade-in duration-200">
-          <div className="flex items-center gap-3 min-w-0">
-            <div className="w-10 h-10 rounded-2xl bg-emerald-500 text-white flex items-center justify-center shrink-0 shadow-md shadow-emerald-500/30">
-              <Radio className="w-5 h-5 animate-pulse" />
+        <div className="relative z-10 p-2.5 sm:p-4 rounded-2xl bg-gradient-to-r from-emerald-950/60 via-slate-900/80 to-indigo-950/50 border border-emerald-500/40 shadow-md sm:shadow-lg shadow-emerald-950/50 backdrop-blur-md flex items-center justify-between gap-2.5 sm:gap-4 animate-in fade-in duration-200">
+          <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl bg-emerald-500 text-white flex items-center justify-center shrink-0 shadow-md shadow-emerald-500/30">
+              <Radio className="w-4 h-4 sm:w-5 sm:h-5 animate-pulse" />
             </div>
             <div className="min-w-0">
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className="inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider text-emerald-300 bg-emerald-950/90 px-2.5 py-0.5 rounded-full border border-emerald-700/60 shadow-xs">
-                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
-                  Live Class Now
+              <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+                <span className="inline-flex items-center gap-1 text-[9px] sm:text-[10px] font-black uppercase tracking-wider text-emerald-300 bg-emerald-950/90 px-2 py-0.5 rounded-full border border-emerald-700/60 shrink-0">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
+                  Live Now
                 </span>
-                <h4 className="font-extrabold text-sm sm:text-base text-white truncate">
+                <h4 className="font-extrabold text-xs sm:text-base text-white truncate max-w-[140px] sm:max-w-none">
                   {liveClass.subject}
                 </h4>
                 {liveClass.code && (
-                  <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700">
+                  <span className="hidden sm:inline-block text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700">
                     {liveClass.code}
                   </span>
                 )}
               </div>
-              <div className="flex items-center gap-3 text-xs text-slate-300 mt-1 flex-wrap">
+              <div className="flex items-center gap-1.5 sm:gap-3 text-[10px] sm:text-xs text-slate-300 mt-0.5 truncate">
                 {liveClass.room && (
-                  <span className="flex items-center gap-1">
-                    <MapPin className="w-3.5 h-3.5 text-emerald-400" />
-                    <span>{liveClass.room}</span>
+                  <span className="flex items-center gap-1 truncate text-slate-300">
+                    <MapPin className="w-3 h-3 text-emerald-400 shrink-0" />
+                    <span className="truncate">{liveClass.room}</span>
                   </span>
                 )}
                 {liveClass.professor && (
-                  <span className="flex items-center gap-1">
-                    <User className="w-3.5 h-3.5 text-emerald-400" />
-                    <span>{liveClass.professor}</span>
+                  <span className="hidden sm:flex items-center gap-1 truncate text-slate-300">
+                    <User className="w-3 h-3 text-emerald-400 shrink-0" />
+                    <span className="truncate">{liveClass.professor}</span>
                   </span>
                 )}
-                <span className="text-slate-400">
-                  • {liveClass.startTime} – {liveClass.endTime}
+                <span className="text-slate-400 text-[10px] sm:text-xs shrink-0">
+                  {liveClass.room ? "• " : ""}{liveClass.startTime} – {liveClass.endTime}
                 </span>
               </div>
             </div>
           </div>
 
           {liveRemainingMins !== null && (
-            <div className="self-end sm:self-auto shrink-0 bg-slate-900/90 border border-emerald-500/30 px-3 py-1.5 rounded-xl shadow-xs text-right">
-              <span className="text-[10px] uppercase font-bold text-slate-400 block tracking-wider">
-                Time Left
+            <div className="shrink-0 bg-slate-900/90 border border-emerald-500/30 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-xl shadow-xs text-right">
+              <span className="text-[9px] sm:text-[10px] uppercase font-bold text-slate-400 block tracking-wider leading-tight">
+                Left
               </span>
               <span className="text-xs sm:text-sm font-extrabold font-mono text-emerald-400">
-                {liveRemainingMins > 0 ? formatDuration(liveRemainingMins) : "Ending now"}
+                {liveRemainingMins > 0 ? formatDuration(liveRemainingMins) : "Ending"}
               </span>
             </div>
           )}
@@ -455,7 +455,7 @@ export function TodayScheduleWidget() {
                     isItemLive
                       ? "bg-emerald-950/50 border-2 border-emerald-500 ring-2 ring-emerald-500/25 shadow-lg shadow-emerald-950/60"
                       : isItemPast
-                      ? "bg-slate-900/60 border border-slate-800/70 opacity-55 hover:opacity-90 transition-opacity"
+                      ? "bg-slate-900/80 border border-slate-800 hover:border-slate-700 shadow-sm"
                       : "bg-slate-850/80 border border-slate-700/70 hover:border-indigo-500/60 hover:bg-slate-800 shadow-md shadow-slate-950/30"
                   }`}
                 >
@@ -466,7 +466,7 @@ export function TodayScheduleWidget() {
                         isItemLive
                           ? "bg-emerald-500 text-white border-emerald-400 shadow-xs"
                           : isItemPast
-                          ? "bg-slate-800/80 text-slate-400 border-slate-700"
+                          ? "bg-slate-800 text-slate-300 border-slate-700"
                           : "bg-indigo-950/70 text-indigo-300 border-indigo-800/70"
                       }`}
                     >
@@ -481,8 +481,9 @@ export function TodayScheduleWidget() {
                         </span>
                       )}
                       {isItemPast && (
-                        <span className="text-[10px] text-slate-400 font-semibold">
-                          ✓ Done
+                        <span className="inline-flex items-center gap-1 text-[10px] font-extrabold uppercase tracking-wider text-emerald-300 bg-emerald-950/90 border border-emerald-500/50 px-2 py-0.5 rounded-full shadow-xs">
+                          <CheckCircle2 className="w-3 h-3 text-emerald-400 shrink-0" />
+                          <span>Done</span>
                         </span>
                       )}
 
