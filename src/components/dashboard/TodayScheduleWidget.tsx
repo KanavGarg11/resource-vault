@@ -7,7 +7,6 @@ import {
   Clock,
   MapPin,
   User,
-  ChevronRight,
   Calendar,
   Plus,
   Trash2,
@@ -16,7 +15,6 @@ import {
   Radio,
   CheckCircle2,
 } from "lucide-react";
-import Link from "next/link";
 import { WeeklyScheduleModal } from "./WeeklyScheduleModal";
 
 const DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
@@ -271,14 +269,6 @@ export function TodayScheduleWidget() {
               Admin Login
             </button>
           )}
-
-          <Link
-            href="/theme/schedules"
-            className="text-xs font-semibold text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 flex items-center gap-0.5 ml-1"
-          >
-            <span>Schedules</span>
-            <ChevronRight className="w-3.5 h-3.5" />
-          </Link>
         </div>
       </div>
 
