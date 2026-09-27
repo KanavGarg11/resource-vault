@@ -138,43 +138,44 @@ export function WeeklyScheduleModal({ isOpen, onClose }: WeeklyScheduleModalProp
     <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-md flex items-center justify-center p-2 sm:p-4 md:p-6 animate-in fade-in duration-150">
       <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl max-w-6xl w-full h-[92vh] flex flex-col shadow-2xl overflow-hidden animate-in zoom-in-95 duration-150">
         {/* Header Controls */}
-        <div className="px-5 py-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-900/80 backdrop-blur-md flex flex-wrap items-center justify-between gap-3 shrink-0 print:hidden">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-indigo-50 dark:bg-indigo-950/80 text-indigo-600 dark:text-indigo-400 flex items-center justify-center border border-indigo-100 dark:border-indigo-900/60 shadow-xs">
-              <Calendar className="w-5 h-5" />
+        <div className="px-3.5 sm:px-6 py-3 sm:py-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-900/80 backdrop-blur-md flex items-center justify-between gap-2 shrink-0 print:hidden">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl bg-indigo-50 dark:bg-indigo-950/80 text-indigo-600 dark:text-indigo-400 flex items-center justify-center border border-indigo-100 dark:border-indigo-900/60 shadow-xs shrink-0">
+              <Calendar className="w-4 h-4 sm:w-5 sm:h-5" />
             </div>
-            <div>
-              <h3 className="font-extrabold text-base sm:text-lg text-slate-900 dark:text-white">
-                Weekly Timetable & Export
+            <div className="min-w-0">
+              <h3 className="font-extrabold text-sm sm:text-lg text-slate-900 dark:text-white truncate">
+                Weekly Timetable
               </h3>
-              <p className="text-xs text-slate-400">
-                {totalClasses} class{totalClasses === 1 ? "" : "es"} across Mon–Sat • Ready to export or print
+              <p className="text-[11px] sm:text-xs text-slate-400 truncate hidden xs:block">
+                {totalClasses} class{totalClasses === 1 ? "" : "es"} • Export or print
               </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0 ml-auto">
             {/* 1. Export PNG Button */}
             <button
               onClick={handleExportPng}
               disabled={exporting || loading || totalClasses === 0}
-              className="inline-flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-md shadow-indigo-500/20 transition-all active:scale-95 disabled:opacity-50"
+              className="inline-flex items-center gap-1 px-2.5 sm:px-3.5 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-md shadow-indigo-500/20 transition-all active:scale-95 disabled:opacity-50"
               title="Download schedule as high-resolution PNG image"
             >
               {exporting ? (
                 <>
                   <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                  <span>Generating PNG...</span>
+                  <span className="hidden sm:inline">Generating...</span>
                 </>
               ) : downloadSuccess ? (
                 <>
                   <Check className="w-3.5 h-3.5 text-emerald-300" />
-                  <span>Downloaded!</span>
+                  <span>Saved!</span>
                 </>
               ) : (
                 <>
                   <Download className="w-3.5 h-3.5" />
-                  <span>Export PNG</span>
+                  <span className="hidden xs:inline">Export PNG</span>
+                  <span className="xs:hidden">PNG</span>
                 </>
               )}
             </button>
@@ -183,7 +184,7 @@ export function WeeklyScheduleModal({ isOpen, onClose }: WeeklyScheduleModalProp
             <button
               onClick={handlePrint}
               disabled={loading || totalClasses === 0}
-              className="inline-flex items-center justify-center p-2 sm:px-3 sm:py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-semibold transition-colors disabled:opacity-50"
+              className="inline-flex items-center justify-center p-1.5 sm:px-3 sm:py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-semibold transition-colors disabled:opacity-50"
               title="Print schedule or save as PDF"
               aria-label="Print schedule"
             >
@@ -191,10 +192,10 @@ export function WeeklyScheduleModal({ isOpen, onClose }: WeeklyScheduleModalProp
               <span className="hidden sm:inline ml-1.5">Print / PDF</span>
             </button>
 
-            {/* 3. Cross icon for closing */}
+            {/* 3. Cross icon for closing - strictly at right side */}
             <button
               onClick={onClose}
-              className="p-1.5 sm:p-2 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors ml-0.5"
+              className="p-1.5 sm:p-2 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors ml-0.5 sm:ml-1"
               title="Close Modal"
               aria-label="Close"
             >

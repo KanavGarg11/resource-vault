@@ -233,26 +233,26 @@ export function TodayScheduleWidget() {
       <div className="absolute bottom-0 left-0 w-64 h-64 bg-violet-600/10 dark:bg-violet-500/10 rounded-full blur-3xl pointer-events-none -ml-20 -mb-20" />
 
       {/* Header */}
-      <div className="flex items-center justify-between relative z-10">
-        <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-xl bg-indigo-500/20 border border-indigo-500/30 text-indigo-400 flex items-center justify-center shadow-inner">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 relative z-10">
+        <div className="flex items-center gap-2.5 w-full sm:w-auto">
+          <div className="w-8 h-8 rounded-xl bg-indigo-500/20 border border-indigo-500/30 text-indigo-400 flex items-center justify-center shadow-inner shrink-0">
             <Clock className="w-4 h-4" />
           </div>
-          <div>
-            <h3 className="font-bold text-sm sm:text-base text-white tracking-tight">
+          <div className="min-w-0">
+            <h3 className="font-bold text-sm sm:text-base text-white tracking-tight truncate">
               Daily Class Schedule
             </h3>
-            <p className="text-[11px] text-slate-400">Timetable & live class tracker</p>
+            <p className="text-[11px] text-slate-400 truncate">Timetable & live class tracker</p>
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 w-full sm:w-auto">
           <button
             onClick={() => setIsWeeklyModalOpen(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-700/80 bg-slate-800/80 hover:bg-slate-700 hover:border-slate-600 text-slate-200 hover:text-white font-bold text-xs transition-all active:scale-95 shadow-sm"
+            className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-3 py-2 sm:py-1.5 rounded-xl border border-slate-700/80 bg-slate-800/80 hover:bg-slate-700 hover:border-slate-600 text-slate-200 hover:text-white font-bold text-xs transition-all active:scale-95 shadow-sm"
             title="View entire week timetable and export as PNG or PDF"
           >
-            <Calendar className="w-3.5 h-3.5 text-indigo-400" />
+            <Calendar className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
             <span className="hidden sm:inline">Weekly Grid & Export</span>
             <span className="sm:hidden">Export</span>
           </button>
@@ -260,15 +260,15 @@ export function TodayScheduleWidget() {
           {isAdmin ? (
             <button
               onClick={() => handleOpenAddModal(activeDay)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs shadow-md shadow-indigo-600/30 transition-all active:scale-95"
+              className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-3 py-2 sm:py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs shadow-md shadow-indigo-600/30 transition-all active:scale-95"
             >
-              <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
+              <Plus className="w-3.5 h-3.5 stroke-[2.5] shrink-0" />
               <span>+ Add Class</span>
             </button>
           ) : (
             <button
               onClick={openPinModal}
-              className="text-xs font-semibold text-indigo-400 hover:text-indigo-300 hover:underline"
+              className="flex-1 sm:flex-initial flex items-center justify-center py-2 sm:py-1.5 px-3 rounded-xl border border-slate-700/80 bg-slate-800/50 hover:bg-slate-800 text-xs font-semibold text-indigo-400 hover:text-indigo-300 hover:underline"
             >
               Admin PIN
             </button>
