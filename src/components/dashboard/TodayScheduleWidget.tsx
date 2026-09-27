@@ -227,15 +227,19 @@ export function TodayScheduleWidget() {
     nextClassStartMin !== null ? Math.max(0, nextClassStartMin - currentMinutes) : null;
 
   return (
-    <div className="glass-panel rounded-3xl p-5 shadow-sm space-y-4">
+    <div className="relative overflow-hidden rounded-3xl p-5 shadow-2xl bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 border border-slate-800/90 text-white space-y-4 shadow-slate-950/20">
+      {/* Ambient background glows for high-contrast aesthetic */}
+      <div className="absolute top-0 right-0 w-80 h-80 bg-indigo-600/10 dark:bg-indigo-500/15 rounded-full blur-3xl pointer-events-none -mr-20 -mt-20" />
+      <div className="absolute bottom-0 left-0 w-64 h-64 bg-violet-600/10 dark:bg-violet-500/10 rounded-full blur-3xl pointer-events-none -ml-20 -mb-20" />
+
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-xl bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 flex items-center justify-center">
+      <div className="flex items-center justify-between relative z-10">
+        <div className="flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded-xl bg-indigo-500/20 border border-indigo-500/30 text-indigo-400 flex items-center justify-center shadow-inner">
             <Clock className="w-4 h-4" />
           </div>
           <div>
-            <h3 className="font-bold text-sm sm:text-base text-slate-900 dark:text-white">
+            <h3 className="font-bold text-sm sm:text-base text-white tracking-tight">
               Daily Class Schedule
             </h3>
             <p className="text-[11px] text-slate-400">Timetable & live class tracker</p>
@@ -245,10 +249,10 @@ export function TodayScheduleWidget() {
         <div className="flex items-center gap-2">
           <button
             onClick={() => setIsWeeklyModalOpen(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-indigo-200 dark:border-indigo-800 bg-indigo-50/70 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-900/60 font-bold text-xs transition-all active:scale-95 shadow-xs"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-700/80 bg-slate-800/80 hover:bg-slate-700 hover:border-slate-600 text-slate-200 hover:text-white font-bold text-xs transition-all active:scale-95 shadow-sm"
             title="View entire week timetable and export as PNG or PDF"
           >
-            <Calendar className="w-3.5 h-3.5" />
+            <Calendar className="w-3.5 h-3.5 text-indigo-400" />
             <span className="hidden sm:inline">Weekly Grid & Export</span>
             <span className="sm:hidden">Weekly</span>
           </button>
@@ -256,7 +260,7 @@ export function TodayScheduleWidget() {
           {isAdmin ? (
             <button
               onClick={() => handleOpenAddModal(activeDay)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-sm shadow-indigo-500/20 transition-all active:scale-95"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs shadow-md shadow-indigo-600/30 transition-all active:scale-95"
             >
               <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
               <span>+ Add Class</span>
@@ -264,9 +268,9 @@ export function TodayScheduleWidget() {
           ) : (
             <button
               onClick={openPinModal}
-              className="text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:underline"
+              className="text-xs font-semibold text-indigo-400 hover:text-indigo-300 hover:underline"
             >
-              Admin Login
+              Admin PIN
             </button>
           )}
         </div>
@@ -275,36 +279,36 @@ export function TodayScheduleWidget() {
       {/* --- Option A: Smart Live Status Banner --- */}
       {/* 1. Live Class Happening Right Now */}
       {isViewingToday && liveClass && (
-        <div className="p-3.5 sm:p-4 rounded-2xl bg-gradient-to-r from-emerald-500/15 via-teal-500/10 to-indigo-500/10 border-2 border-emerald-500/40 dark:border-emerald-500/30 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-in fade-in duration-200">
+        <div className="relative z-10 p-3.5 sm:p-4 rounded-2xl bg-gradient-to-r from-emerald-950/60 via-slate-900/80 to-indigo-950/50 border border-emerald-500/40 shadow-lg shadow-emerald-950/50 backdrop-blur-md flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-in fade-in duration-200">
           <div className="flex items-center gap-3 min-w-0">
-            <div className="w-10 h-10 rounded-2xl bg-emerald-500 text-white flex items-center justify-center shrink-0 shadow-md shadow-emerald-500/25">
+            <div className="w-10 h-10 rounded-2xl bg-emerald-500 text-white flex items-center justify-center shrink-0 shadow-md shadow-emerald-500/30">
               <Radio className="w-5 h-5 animate-pulse" />
             </div>
             <div className="min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
-                <span className="inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider text-emerald-700 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-950 px-2.5 py-0.5 rounded-full border border-emerald-300 dark:border-emerald-800">
-                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
+                <span className="inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider text-emerald-300 bg-emerald-950/90 px-2.5 py-0.5 rounded-full border border-emerald-700/60 shadow-xs">
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
                   Live Class Now
                 </span>
-                <h4 className="font-extrabold text-sm sm:text-base text-slate-900 dark:text-white truncate">
+                <h4 className="font-extrabold text-sm sm:text-base text-white truncate">
                   {liveClass.subject}
                 </h4>
                 {liveClass.code && (
-                  <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-white/80 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
+                  <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700">
                     {liveClass.code}
                   </span>
                 )}
               </div>
-              <div className="flex items-center gap-3 text-xs text-slate-600 dark:text-slate-300 mt-1 flex-wrap">
+              <div className="flex items-center gap-3 text-xs text-slate-300 mt-1 flex-wrap">
                 {liveClass.room && (
                   <span className="flex items-center gap-1">
-                    <MapPin className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                    <MapPin className="w-3.5 h-3.5 text-emerald-400" />
                     <span>{liveClass.room}</span>
                   </span>
                 )}
                 {liveClass.professor && (
                   <span className="flex items-center gap-1">
-                    <User className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                    <User className="w-3.5 h-3.5 text-emerald-400" />
                     <span>{liveClass.professor}</span>
                   </span>
                 )}
@@ -316,11 +320,11 @@ export function TodayScheduleWidget() {
           </div>
 
           {liveRemainingMins !== null && (
-            <div className="self-end sm:self-auto shrink-0 bg-white dark:bg-slate-900/90 border border-emerald-200 dark:border-emerald-900/60 px-3 py-1.5 rounded-xl shadow-xs text-right">
+            <div className="self-end sm:self-auto shrink-0 bg-slate-900/90 border border-emerald-500/30 px-3 py-1.5 rounded-xl shadow-xs text-right">
               <span className="text-[10px] uppercase font-bold text-slate-400 block tracking-wider">
                 Time Left
               </span>
-              <span className="text-xs sm:text-sm font-extrabold font-mono text-emerald-600 dark:text-emerald-400">
+              <span className="text-xs sm:text-sm font-extrabold font-mono text-emerald-400">
                 {liveRemainingMins > 0 ? formatDuration(liveRemainingMins) : "Ending now"}
               </span>
             </div>
@@ -330,28 +334,28 @@ export function TodayScheduleWidget() {
 
       {/* 2. Break / Up Next Class */}
       {isViewingToday && !liveClass && nextClass && (
-        <div className="p-3 sm:p-3.5 rounded-2xl bg-indigo-50/70 dark:bg-indigo-950/40 border border-indigo-200/80 dark:border-indigo-900/60 flex items-center justify-between gap-3 animate-in fade-in">
+        <div className="relative z-10 p-3 sm:p-3.5 rounded-2xl bg-indigo-950/40 border border-indigo-800/60 flex items-center justify-between gap-3 animate-in fade-in">
           <div className="flex items-center gap-3 min-w-0">
-            <div className="w-9 h-9 rounded-xl bg-indigo-100 dark:bg-indigo-900/80 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0">
+            <div className="w-9 h-9 rounded-xl bg-indigo-900/70 text-indigo-300 flex items-center justify-center shrink-0 border border-indigo-700/50">
               <Clock className="w-4 h-4" />
             </div>
             <div className="min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-[10px] font-black uppercase tracking-wider text-indigo-600 dark:text-indigo-400 bg-indigo-100 dark:bg-indigo-900/70 px-2 py-0.5 rounded-md">
+                <span className="text-[10px] font-black uppercase tracking-wider text-indigo-300 bg-indigo-900/80 px-2 py-0.5 rounded-md border border-indigo-700/60">
                   Up Next
                 </span>
-                <span className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white truncate">
+                <span className="text-xs sm:text-sm font-bold text-white truncate">
                   {nextClass.subject}
                 </span>
                 {nextClass.code && (
                   <span className="text-[10px] font-mono text-slate-400">({nextClass.code})</span>
                 )}
               </div>
-              <div className="flex items-center gap-2 text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 flex-wrap">
+              <div className="flex items-center gap-2 text-[11px] text-slate-300 mt-0.5 flex-wrap">
                 {nextClass.room && <span>{nextClass.room} • </span>}
                 <span>Starts at {nextClass.startTime}</span>
                 {nextStartInMins !== null && (
-                  <span className="font-semibold text-indigo-600 dark:text-indigo-400">
+                  <span className="font-semibold text-indigo-400">
                     (in {formatDuration(nextStartInMins)})
                   </span>
                 )}
@@ -363,14 +367,14 @@ export function TodayScheduleWidget() {
 
       {/* 3. All Classes Done Today */}
       {isViewingToday && !liveClass && !nextClass && allDoneToday && (
-        <div className="p-3 rounded-2xl bg-emerald-50/60 dark:bg-emerald-950/20 border border-emerald-200/60 dark:border-emerald-900/40 flex items-center gap-2.5 text-xs text-emerald-800 dark:text-emerald-300 animate-in fade-in">
-          <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
+        <div className="relative z-10 p-3 rounded-2xl bg-emerald-950/30 border border-emerald-800/50 flex items-center gap-2.5 text-xs text-emerald-300 animate-in fade-in">
+          <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
           <span>All scheduled classes for today are completed! Enjoy your free time 🎉</span>
         </div>
       )}
 
       {/* Day Selector Pills */}
-      <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
+      <div className="flex items-center gap-1.5 overflow-x-auto pb-1 relative z-10">
         {DAYS.map((day) => {
           const isSelected = activeDay === day;
           const isRealToday = todayName === day;
@@ -378,15 +382,15 @@ export function TodayScheduleWidget() {
             <button
               key={day}
               onClick={() => setActiveDay(day)}
-              className={`px-3 py-1 rounded-xl text-xs font-medium whitespace-nowrap transition-all ${
+              className={`px-3 py-1 rounded-xl text-xs whitespace-nowrap transition-all ${
                 isSelected
-                  ? "bg-indigo-600 text-white shadow-sm font-bold"
-                  : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
+                  ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/30 font-bold border border-indigo-500"
+                  : "bg-slate-800/70 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700/50 font-medium"
               }`}
             >
               <span>{day.slice(0, 3)}</span>
               {isRealToday && (
-                <span className="ml-1.5 w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block align-middle" />
+                <span className="ml-1.5 w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block align-middle animate-pulse" />
               )}
             </button>
           );
@@ -394,23 +398,23 @@ export function TodayScheduleWidget() {
       </div>
 
       {/* Horizontal Left-to-Right Schedule Strip */}
-      <div className="flex items-stretch gap-3 overflow-x-auto pb-2 pt-0.5 scrollbar-thin">
+      <div className="flex items-stretch gap-3 overflow-x-auto pb-2 pt-0.5 scrollbar-thin relative z-10">
         {loading ? (
           <div className="py-6 w-full text-center text-xs text-slate-400 flex items-center justify-center gap-2">
-            <Loader2 className="w-4 h-4 animate-spin text-indigo-500" />
+            <Loader2 className="w-4 h-4 animate-spin text-indigo-400" />
             <span>Loading classes...</span>
           </div>
         ) : entries.length === 0 ? (
-          <div className="py-3.5 px-4 w-full text-center bg-slate-50 dark:bg-slate-800/40 rounded-2xl border border-dashed border-slate-200 dark:border-slate-800 flex items-center justify-between gap-3">
-            <div className="flex items-center gap-2 text-xs text-slate-500">
+          <div className="py-3.5 px-4 w-full text-center bg-slate-850/60 rounded-2xl border border-dashed border-slate-700/70 flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2 text-xs text-slate-300">
               <Calendar className="w-4 h-4 text-slate-400 shrink-0" />
-              <span>No scheduled classes for <strong>{activeDay}</strong>.</span>
+              <span>No scheduled classes for <strong className="text-white">{activeDay}</strong>.</span>
             </div>
             {isAdmin ? (
               <button
                 type="button"
                 onClick={() => handleOpenAddModal(activeDay)}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-sm transition-all shrink-0 active:scale-95"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs shadow-sm transition-all shrink-0 active:scale-95"
               >
                 <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
                 <span>+ Add Class</span>
@@ -419,7 +423,7 @@ export function TodayScheduleWidget() {
               <button
                 type="button"
                 onClick={openPinModal}
-                className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline font-semibold shrink-0"
+                className="text-xs text-indigo-400 hover:text-indigo-300 hover:underline font-semibold shrink-0"
               >
                 Admin PIN to set
               </button>
@@ -449,10 +453,10 @@ export function TodayScheduleWidget() {
                   key={item.id}
                   className={`group min-w-[210px] sm:min-w-[240px] max-w-[260px] shrink-0 p-3.5 rounded-2xl transition-all flex flex-col justify-between space-y-2.5 ${
                     isItemLive
-                      ? "bg-emerald-50/70 dark:bg-emerald-950/40 border-2 border-emerald-500 dark:border-emerald-500/90 ring-2 ring-emerald-500/20 shadow-md"
+                      ? "bg-emerald-950/50 border-2 border-emerald-500 ring-2 ring-emerald-500/25 shadow-lg shadow-emerald-950/60"
                       : isItemPast
-                      ? "bg-slate-50/80 dark:bg-slate-900/40 border border-slate-100 dark:border-slate-800/60 opacity-60 hover:opacity-100"
-                      : "bg-white dark:bg-slate-850 border border-slate-200/90 dark:border-slate-800 hover:border-indigo-300 dark:hover:border-indigo-800 shadow-xs"
+                      ? "bg-slate-900/60 border border-slate-800/70 opacity-55 hover:opacity-90 transition-opacity"
+                      : "bg-slate-850/80 border border-slate-700/70 hover:border-indigo-500/60 hover:bg-slate-800 shadow-md shadow-slate-950/30"
                   }`}
                 >
                   {/* 1. Card Top: Time and Status Badges */}
@@ -460,8 +464,10 @@ export function TodayScheduleWidget() {
                     <span
                       className={`text-[11px] font-mono font-bold px-2 py-0.5 rounded-lg border ${
                         isItemLive
-                          ? "bg-emerald-600 text-white border-emerald-600 shadow-xs"
-                          : "bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 border-indigo-100 dark:border-indigo-900/60"
+                          ? "bg-emerald-500 text-white border-emerald-400 shadow-xs"
+                          : isItemPast
+                          ? "bg-slate-800/80 text-slate-400 border-slate-700"
+                          : "bg-indigo-950/70 text-indigo-300 border-indigo-800/70"
                       }`}
                     >
                       {item.startTime} – {item.endTime}
@@ -484,7 +490,7 @@ export function TodayScheduleWidget() {
                         <button
                           type="button"
                           onClick={() => handleDeleteEntry(item.id, item.subject)}
-                          className="p-1 text-slate-300 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/50 rounded-lg transition-colors opacity-0 group-hover:opacity-100 ml-0.5"
+                          className="p-1 text-slate-400 hover:text-rose-400 hover:bg-rose-950/60 rounded-lg transition-colors opacity-0 group-hover:opacity-100 ml-0.5"
                           title="Delete Class"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
@@ -498,8 +504,10 @@ export function TodayScheduleWidget() {
                     <h4
                       className={`font-extrabold text-sm line-clamp-1 ${
                         isItemLive
-                          ? "text-emerald-950 dark:text-emerald-100"
-                          : "text-slate-900 dark:text-white"
+                          ? "text-emerald-200"
+                          : isItemPast
+                          ? "text-slate-300"
+                          : "text-white"
                       }`}
                       title={item.subject}
                     >
@@ -513,14 +521,14 @@ export function TodayScheduleWidget() {
                   </div>
 
                   {/* 3. Card Bottom: Room and Professor */}
-                  <div className="flex items-center gap-2 text-[11px] text-slate-500 dark:text-slate-400 pt-1 border-t border-slate-100 dark:border-slate-800/60 truncate">
+                  <div className="flex items-center gap-2 text-[11px] text-slate-300 pt-1 border-t border-slate-700/60 truncate">
                     {item.room ? (
-                      <span className="flex items-center gap-1 truncate" title={item.room}>
+                      <span className="flex items-center gap-1 truncate text-slate-300" title={item.room}>
                         <MapPin className="w-3 h-3 text-slate-400 shrink-0" />
                         <span className="truncate">{item.room}</span>
                       </span>
                     ) : item.professor ? (
-                      <span className="flex items-center gap-1 truncate" title={item.professor}>
+                      <span className="flex items-center gap-1 truncate text-slate-300" title={item.professor}>
                         <User className="w-3 h-3 text-slate-400 shrink-0" />
                         <span className="truncate">{item.professor}</span>
                       </span>
@@ -544,7 +552,7 @@ export function TodayScheduleWidget() {
           <button
             type="button"
             onClick={() => handleOpenAddModal(activeDay)}
-            className="min-w-[120px] shrink-0 p-3 rounded-2xl border-2 border-dashed border-slate-200 dark:border-slate-800 hover:border-indigo-400 dark:hover:border-indigo-600 hover:bg-indigo-50/40 dark:hover:bg-indigo-950/20 text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-all flex flex-col items-center justify-center gap-1 text-xs font-semibold"
+            className="min-w-[120px] shrink-0 p-3 rounded-2xl border-2 border-dashed border-slate-700/80 hover:border-indigo-400 bg-slate-800/40 hover:bg-indigo-950/40 text-slate-400 hover:text-indigo-300 transition-all flex flex-col items-center justify-center gap-1 text-xs font-semibold"
           >
             <Plus className="w-4 h-4" />
             <span>Add Class</span>
