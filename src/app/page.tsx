@@ -20,7 +20,8 @@ export default function HomePage() {
   const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
-  const fetchCards = async (query = searchQuery) => {
+  const fetchCards = async (query = searchQuery, silent = false) => {
+    if (!silent && cards.length === 0) setLoading(true);
     try {
       const url = query.trim()
         ? `/api/cards?search=${encodeURIComponent(query.trim())}`
@@ -39,7 +40,29 @@ export default function HomePage() {
 
   useEffect(() => {
     fetchCards();
-  }, [user]);
+
+    // 1. Instant sync on app unlock / tab focus
+    const onSync = () => {
+      if (document.visibilityState === "visible") {
+        fetchCards(searchQuery, true);
+      }
+    };
+    window.addEventListener("focus", onSync);
+    document.addEventListener("visibilitychange", onSync);
+
+    // 2. Gentle heartbeat pulse every 12s while tab is visible
+    const pulseTimer = setInterval(() => {
+      if (document.visibilityState === "visible") {
+        fetchCards(searchQuery, true);
+      }
+    }, 12000);
+
+    return () => {
+      window.removeEventListener("focus", onSync);
+      document.removeEventListener("visibilitychange", onSync);
+      clearInterval(pulseTimer);
+    };
+  }, [user, searchQuery]);
 
   const handleSearchChange = (val: string) => {
     setSearchQuery(val);

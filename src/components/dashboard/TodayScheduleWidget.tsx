@@ -88,12 +88,8 @@ export function TodayScheduleWidget() {
   const [formProfessor, setFormProfessor] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
-  useEffect(() => {
-    fetchTimetable(activeDay);
-  }, [activeDay, isAdmin]);
-
-  const fetchTimetable = async (day: string) => {
-    setLoading(true);
+  const fetchTimetable = async (day: string, silent = false) => {
+    if (!silent && entries.length === 0) setLoading(true);
     try {
       const res = await fetch(`/api/timetable?day=${day}`);
       if (res.ok) {
@@ -106,6 +102,32 @@ export function TodayScheduleWidget() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    fetchTimetable(activeDay);
+
+    // 1. Instant sync on app unlock / tab focus
+    const onSync = () => {
+      if (document.visibilityState === "visible") {
+        fetchTimetable(activeDay, true);
+      }
+    };
+    window.addEventListener("focus", onSync);
+    document.addEventListener("visibilitychange", onSync);
+
+    // 2. Periodic sync every 20s while viewing schedule
+    const pulseTimer = setInterval(() => {
+      if (document.visibilityState === "visible") {
+        fetchTimetable(activeDay, true);
+      }
+    }, 20000);
+
+    return () => {
+      window.removeEventListener("focus", onSync);
+      document.removeEventListener("visibilitychange", onSync);
+      clearInterval(pulseTimer);
+    };
+  }, [activeDay, isAdmin]);
 
   const handleOpenAddModal = (day = activeDay) => {
     if (!isAdmin) {

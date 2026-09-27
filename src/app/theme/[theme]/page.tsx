@@ -62,8 +62,9 @@ export default function ThemePage() {
 
   const isValidTheme = VALID_THEMES.includes(theme);
 
-  const fetchThemeCards = async (query = searchQuery) => {
+  const fetchThemeCards = async (query = searchQuery, silent = false) => {
     if (!isValidTheme) return;
+    if (!silent && cards.length === 0) setLoading(true);
     try {
       const q = query.trim() ? `&search=${encodeURIComponent(query.trim())}` : "";
       const res = await fetch(`/api/cards?theme=${theme}${q}`);
@@ -81,8 +82,30 @@ export default function ThemePage() {
   useEffect(() => {
     if (isValidTheme) {
       fetchThemeCards();
+
+      // 1. Instant sync on app unlock / tab focus
+      const onSync = () => {
+        if (document.visibilityState === "visible") {
+          fetchThemeCards(searchQuery, true);
+        }
+      };
+      window.addEventListener("focus", onSync);
+      document.addEventListener("visibilitychange", onSync);
+
+      // 2. Gentle heartbeat pulse every 12s while tab is visible
+      const pulseTimer = setInterval(() => {
+        if (document.visibilityState === "visible") {
+          fetchThemeCards(searchQuery, true);
+        }
+      }, 12000);
+
+      return () => {
+        window.removeEventListener("focus", onSync);
+        document.removeEventListener("visibilitychange", onSync);
+        clearInterval(pulseTimer);
+      };
     }
-  }, [theme, user]);
+  }, [theme, user, searchQuery]);
 
   if (!isValidTheme) {
     notFound();

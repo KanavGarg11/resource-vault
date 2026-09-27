@@ -73,8 +73,9 @@ export function CardThreadModal({
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const fetchCard = async () => {
+  const fetchCard = async (silent = false) => {
     if (!cardId) return;
+    if (!silent && !card) setLoading(true);
     try {
       const res = await fetch(`/api/cards/${cardId}`);
       if (res.ok) {
@@ -92,10 +93,32 @@ export function CardThreadModal({
     if (cardId) {
       setLoading(true);
       fetchCard();
+
+      // 1. Instant sync when phone screen is turned on / tab focused
+      const onSync = () => {
+        if (document.visibilityState === "visible") {
+          fetchCard(true);
+        }
+      };
+      window.addEventListener("focus", onSync);
+      document.addEventListener("visibilitychange", onSync);
+
+      // 2. Chat Pulse: Auto-sync every 3.5s while active to catch real-time laptop changes
+      const pulseInterval = setInterval(() => {
+        if (document.visibilityState === "visible" && !editingItemId && !sending) {
+          fetchCard(true);
+        }
+      }, 3500);
+
+      return () => {
+        window.removeEventListener("focus", onSync);
+        document.removeEventListener("visibilitychange", onSync);
+        clearInterval(pulseInterval);
+      };
     } else {
       setCard(null);
     }
-  }, [cardId]);
+  }, [cardId, editingItemId, sending]);
 
   useEffect(() => {
     // Auto-scroll to latest message when items load or change
