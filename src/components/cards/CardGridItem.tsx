@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, THEME_CONFIG } from "@/lib/types";
 import { useAdmin } from "@/hooks/useAdmin";
 import {
@@ -14,6 +14,7 @@ import {
   Loader2,
   Share2,
   Globe,
+  Pin,
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { ShareCardModal } from "./ShareCardModal";
@@ -22,6 +23,7 @@ interface CardGridItemProps {
   card: Card;
   onClick: () => void;
   onDelete?: (id: string) => void;
+  onPinToggle?: (id: string, isPinned: boolean) => void;
 }
 
 function isImageItem(item: {
@@ -36,16 +38,48 @@ function isImageItem(item: {
   return /\.(jpg|jpeg|png|webp|gif|svg|bmp|ico|avif)$/i.test(pathOrName);
 }
 
-export function CardGridItem({ card, onClick, onDelete }: CardGridItemProps) {
+export function CardGridItem({ card, onClick, onDelete, onPinToggle }: CardGridItemProps) {
   const { isAdmin } = useAdmin();
   const [isDeleting, setIsDeleting] = useState(false);
   const [isShareOpen, setIsShareOpen] = useState(false);
   const [isPublic, setIsPublic] = useState(card.isPublic ?? false);
   const [shareToken, setShareToken] = useState(card.shareToken);
+  const [isPinned, setIsPinned] = useState(card.isPinned ?? false);
+  const [togglingPin, setTogglingPin] = useState(false);
+
+  useEffect(() => {
+    setIsPinned(card.isPinned ?? false);
+  }, [card.isPinned]);
 
   const theme = THEME_CONFIG[card.theme] || THEME_CONFIG.personal;
   const items = card.items || [];
   const itemCount = card._count?.items ?? items.length;
+
+  const handleTogglePin = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!isAdmin || togglingPin) return;
+    setTogglingPin(true);
+    const nextPinned = !isPinned;
+    try {
+      const res = await fetch(`/api/cards/${card.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ isPinned: nextPinned }),
+      });
+      if (res.ok) {
+        setIsPinned(nextPinned);
+        onPinToggle?.(card.id, nextPinned);
+      } else {
+        const data = await res.json().catch(() => ({}));
+        alert(data.error || "Failed to update pin status");
+      }
+    } catch (err) {
+      console.error("Error toggling pin:", err);
+      alert("Failed to toggle pin");
+    } finally {
+      setTogglingPin(false);
+    }
+  };
 
   const handleDelete = async (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -79,13 +113,22 @@ export function CardGridItem({ card, onClick, onDelete }: CardGridItemProps) {
       {/* Top Header */}
       <div className="p-4 sm:p-5 pb-2 shrink-0">
         <div className="flex items-center justify-between gap-2 mb-2">
-          {/* Theme Pill Badge & Share Status */}
-          <div className="flex items-center gap-1.5">
+          {/* Theme Pill Badge, Pinned, & Share Status */}
+          <div className="flex items-center gap-1.5 flex-wrap">
             <span
               className={`text-[10px] font-bold px-2.5 py-0.8 rounded-lg border uppercase tracking-wider ${theme.bg} ${theme.border} ${theme.color}`}
             >
               {theme.label}
             </span>
+            {isPinned && (
+              <span
+                className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-bold bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-800"
+                title="Pinned on Home Page"
+              >
+                <Pin className="w-2.5 h-2.5 fill-amber-500 text-amber-500 rotate-45" />
+                <span>Pinned</span>
+              </span>
+            )}
             {isPublic && (
               <span
                 className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-bold bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800"
@@ -99,6 +142,26 @@ export function CardGridItem({ card, onClick, onDelete }: CardGridItemProps) {
 
           <div className="flex items-center gap-1.5 text-[11px] text-slate-400">
             <span>{formatDistanceToNow(new Date(card.updatedAt), { addSuffix: true })}</span>
+
+            {isAdmin && (
+              <button
+                type="button"
+                onClick={handleTogglePin}
+                disabled={togglingPin}
+                className={`p-1 rounded-lg transition-all ml-1 ${
+                  isPinned
+                    ? "text-amber-500 bg-amber-50 dark:bg-amber-950/60 hover:bg-amber-100 dark:hover:bg-amber-900/60 opacity-100"
+                    : "text-slate-300 hover:text-amber-500 hover:bg-amber-50 dark:hover:bg-amber-950/60 opacity-0 group-hover:opacity-100"
+                }`}
+                title={isPinned ? "Unpin from Home Page" : "Pin to Home Page"}
+              >
+                {togglingPin ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin text-amber-500" />
+                ) : (
+                  <Pin className={`w-3.5 h-3.5 rotate-45 ${isPinned ? "fill-amber-500 text-amber-500" : ""}`} />
+                )}
+              </button>
+            )}
 
             {isAdmin && (
               <button

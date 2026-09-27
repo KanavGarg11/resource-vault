@@ -46,12 +46,15 @@ export async function GET(req: NextRequest) {
       ];
     }
 
+    // Pinned cards are prioritized ONLY on the Home Page, not on dedicated Theme pages
+    const isThemePage = Boolean(theme && theme !== "all");
+    const orderBy: any = isThemePage
+      ? [{ updatedAt: "desc" }]
+      : [{ isPinned: "desc" }, { updatedAt: "desc" }];
+
     const cards = await db.card.findMany({
       where,
-      orderBy: [
-        { isPinned: "desc" },
-        { updatedAt: "desc" },
-      ],
+      orderBy,
       include: {
         items: {
           orderBy: { createdAt: "desc" },

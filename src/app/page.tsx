@@ -9,7 +9,7 @@ import { CardThreadModal } from "@/components/cards/CardThreadModal";
 import { CreateCardModal } from "@/components/cards/CreateCardModal";
 import { BottomNav } from "@/components/layout/BottomNav";
 import { useAdmin } from "@/hooks/useAdmin";
-import { Search, Plus, X, Layers, Loader2, Sparkles, LogIn } from "lucide-react";
+import { Search, Plus, X, Layers, Loader2, Sparkles, LogIn, Pin } from "lucide-react";
 
 export default function HomePage() {
   const { user, isAdmin, openPinModal } = useAdmin();
@@ -213,16 +213,84 @@ export default function HomePage() {
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-            {cards.map((card) => (
-              <CardGridItem
-                key={card.id}
-                card={card}
-                onClick={() => setSelectedCardId(card.id)}
-                onDelete={handleCardDeleted}
-              />
-            ))}
-          </div>
+          (() => {
+            const isSearching = Boolean(searchQuery.trim());
+            const pinnedCards = cards.filter((c) => c.isPinned);
+            const otherCards = cards.filter((c) => !c.isPinned);
+
+            if (isSearching || pinnedCards.length === 0) {
+              return (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                  {cards.map((card) => (
+                    <CardGridItem
+                      key={card.id}
+                      card={card}
+                      onClick={() => setSelectedCardId(card.id)}
+                      onDelete={handleCardDeleted}
+                      onPinToggle={() => fetchCards()}
+                    />
+                  ))}
+                </div>
+              );
+            }
+
+            return (
+              <div className="space-y-7">
+                {/* 1. Pinned Cards Section (Only on Home Page) */}
+                <div className="space-y-3.5">
+                  <div className="flex items-center gap-2">
+                    <div className="w-6 h-6 rounded-lg bg-amber-50 dark:bg-amber-950/80 border border-amber-200 dark:border-amber-800 flex items-center justify-center text-amber-500">
+                      <Pin className="w-3.5 h-3.5 fill-amber-500 rotate-45" />
+                    </div>
+                    <h3 className="text-sm font-extrabold text-slate-800 dark:text-slate-200 tracking-tight">
+                      Pinned Cards
+                    </h3>
+                    <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-800">
+                      {pinnedCards.length}
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                    {pinnedCards.map((card) => (
+                      <CardGridItem
+                        key={card.id}
+                        card={card}
+                        onClick={() => setSelectedCardId(card.id)}
+                        onDelete={handleCardDeleted}
+                        onPinToggle={() => fetchCards()}
+                      />
+                    ))}
+                  </div>
+                </div>
+
+                {/* 2. All Other Cards Section */}
+                {otherCards.length > 0 && (
+                  <div className="space-y-3.5 pt-2">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-sm font-extrabold text-slate-800 dark:text-slate-200 tracking-tight">
+                        All Cards
+                      </h3>
+                      <span className="text-xs text-slate-400">
+                        {otherCards.length} {otherCards.length === 1 ? "card" : "cards"}
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                      {otherCards.map((card) => (
+                        <CardGridItem
+                          key={card.id}
+                          card={card}
+                          onClick={() => setSelectedCardId(card.id)}
+                          onDelete={handleCardDeleted}
+                          onPinToggle={() => fetchCards()}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })()
         )}
       </section>
 

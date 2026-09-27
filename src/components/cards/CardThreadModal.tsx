@@ -23,6 +23,7 @@ import {
   Loader2,
   Lock,
   Share2,
+  Pin,
 } from "lucide-react";
 import { format, formatDistanceToNow } from "date-fns";
 import { compressImageIfNeeded } from "@/lib/compressImage";
@@ -62,6 +63,7 @@ export function CardThreadModal({
   const [sending, setSending] = useState(false);
   const [compressing, setCompressing] = useState(false);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+  const [togglingPin, setTogglingPin] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [lightboxImage, setLightboxImage] = useState<string | null>(null);
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
@@ -288,6 +290,31 @@ export function CardThreadModal({
     }
   };
 
+  const handleTogglePin = async () => {
+    if (!isAdmin || !card || togglingPin) return;
+    setTogglingPin(true);
+    const nextPinned = !card.isPinned;
+    try {
+      const res = await fetch(`/api/cards/${card.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ isPinned: nextPinned }),
+      });
+      if (res.ok) {
+        setCard((prev) => (prev ? { ...prev, isPinned: nextPinned } : prev));
+        onCardUpdated();
+      } else {
+        const data = await res.json().catch(() => ({}));
+        alert(data.error || "Failed to update pin status");
+      }
+    } catch (err) {
+      console.error("Error toggling pin:", err);
+      alert("Failed to toggle pin");
+    } finally {
+      setTogglingPin(false);
+    }
+  };
+
   const themeInfo = card ? THEME_CONFIG[card.theme] : null;
 
   return (
@@ -303,12 +330,21 @@ export function CardThreadModal({
               <h3 className="font-extrabold text-base sm:text-lg text-slate-900 dark:text-white truncate">
                 {card?.title || "Loading Card..."}
               </h3>
-              <div className="flex items-center gap-2 mt-0.5">
+              <div className="flex items-center gap-2 mt-0.5 flex-wrap">
                 {themeInfo && (
                   <span
                     className={`text-[10px] font-bold px-2 py-0.5 rounded-md border uppercase tracking-wider ${themeInfo.bg} ${themeInfo.border} ${themeInfo.color}`}
                   >
                     {themeInfo.label}
+                  </span>
+                )}
+                {card?.isPinned && (
+                  <span
+                    className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-md bg-amber-50 dark:bg-amber-950/80 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-800"
+                    title="Pinned on Home Page"
+                  >
+                    <Pin className="w-2.5 h-2.5 fill-amber-500 text-amber-500 rotate-45" />
+                    <span>Pinned</span>
                   </span>
                 )}
                 <span className="text-[11px] text-slate-400">
@@ -324,6 +360,25 @@ export function CardThreadModal({
           </div>
 
           <div className="flex items-center gap-1.5 shrink-0">
+            {isAdmin && (
+              <button
+                onClick={handleTogglePin}
+                disabled={togglingPin}
+                className={`p-2 rounded-xl transition-colors ${
+                  card?.isPinned
+                    ? "text-amber-500 bg-amber-50 dark:bg-amber-950/60 hover:bg-amber-100 dark:hover:bg-amber-900/60"
+                    : "text-slate-400 hover:text-amber-500 hover:bg-amber-50 dark:hover:bg-amber-950/40"
+                }`}
+                title={card?.isPinned ? "Unpin from Home Page" : "Pin to Home Page"}
+              >
+                {togglingPin ? (
+                  <Loader2 className="w-4 h-4 animate-spin text-amber-500" />
+                ) : (
+                  <Pin className={`w-4 h-4 rotate-45 ${card?.isPinned ? "fill-amber-500 text-amber-500" : ""}`} />
+                )}
+              </button>
+            )}
+
             {isAdmin && (
               <button
                 onClick={() => setIsShareModalOpen(true)}

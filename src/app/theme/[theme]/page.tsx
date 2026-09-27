@@ -209,6 +209,7 @@ export default function ThemePage() {
               card={card}
               onClick={() => setSelectedCardId(card.id)}
               onDelete={handleCardDeleted}
+              onPinToggle={() => fetchThemeCards()}
             />
           ))}
         </div>
