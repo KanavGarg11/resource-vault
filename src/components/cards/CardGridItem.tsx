@@ -108,7 +108,11 @@ export function CardGridItem({ card, onClick, onDelete, onPinToggle }: CardGridI
   return (
     <div
       onClick={onClick}
-      className="group relative h-72 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 hover:border-indigo-400 dark:hover:border-indigo-600 shadow-sm hover:shadow-xl hover:shadow-indigo-500/10 transition-all duration-200 cursor-pointer flex flex-col justify-between overflow-hidden"
+      className={`group relative h-72 rounded-3xl bg-white dark:bg-slate-900 shadow-md shadow-slate-200/60 dark:shadow-2xl dark:shadow-slate-950/60 hover:shadow-xl hover:shadow-indigo-500/15 transition-all duration-200 cursor-pointer flex flex-col justify-between overflow-hidden ${
+        isPinned
+          ? "border-2 border-amber-400 dark:border-amber-500/90 hover:border-amber-500 dark:hover:border-amber-400 ring-1 ring-amber-400/25"
+          : "border-2 border-slate-300 dark:border-slate-700/90 hover:border-indigo-500 dark:hover:border-indigo-400"
+      }`}
     >
       {/* Top Header */}
       <div className="p-4 sm:p-5 pb-2 shrink-0">
@@ -280,7 +284,7 @@ export function CardGridItem({ card, onClick, onDelete, onPinToggle }: CardGridI
       </div>
 
       {/* Bottom Footer Action */}
-      <div className="px-4 sm:px-5 py-3 border-t border-slate-100 dark:border-slate-800/80 bg-slate-50/50 dark:bg-slate-900/50 flex items-center justify-between text-xs font-semibold text-slate-500 dark:text-slate-400 shrink-0 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
+      <div className="px-4 sm:px-5 py-3 border-t border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 flex items-center justify-between text-xs font-semibold text-slate-500 dark:text-slate-400 shrink-0 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
         <span className="flex items-center gap-1.5">
           <MessageSquare className="w-3.5 h-3.5" />
           <span>{itemCount} item{itemCount === 1 ? "" : "s"}</span>

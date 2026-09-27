@@ -198,7 +198,7 @@ export default function ThemePage() {
           <p className="text-xs text-slate-400 max-w-sm mx-auto">
             {searchQuery
               ? "Try clearing your search query."
-              : `Click "+ Add ${themeConfig.label} Card" above to start your first self-chat card!`}
+              : `Click "Add ${themeConfig.label} Card" above to start your first self-chat card!`}
           </p>
         </div>
       ) : (
