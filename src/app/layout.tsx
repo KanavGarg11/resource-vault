@@ -4,7 +4,9 @@ import { AuthProvider } from "@/components/providers/AuthProvider";
 import { AdminProvider } from "@/hooks/useAdmin";
 import { PwaProvider } from "@/components/providers/PwaProvider";
 import { Navbar } from "@/components/layout/Navbar";
+import { BottomNav } from "@/components/layout/BottomNav";
 import { PwaInstallPrompt } from "@/components/ui/PwaInstallPrompt";
+import { CardCountsProvider } from "@/components/providers/CardCountsProvider";
 
 export const metadata: Metadata = {
   title: "LifeVault - Personal Resource Hub & Student Dashboard",
@@ -49,13 +51,16 @@ export default function RootLayout({
       <body className="antialiased selection:bg-indigo-500 selection:text-white">
         <AuthProvider>
           <AdminProvider>
-            <PwaProvider>
-              <div className="min-h-screen flex flex-col bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors">
-                <Navbar />
-                <main className="flex-1 pb-20 md:pb-12">{children}</main>
-              </div>
-              <PwaInstallPrompt />
-            </PwaProvider>
+            <CardCountsProvider>
+              <PwaProvider>
+                <div className="min-h-screen flex flex-col bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors">
+                  <Navbar />
+                  <main className="flex-1 pb-20 md:pb-12">{children}</main>
+                  <BottomNav />
+                </div>
+                <PwaInstallPrompt />
+              </PwaProvider>
+            </CardCountsProvider>
           </AdminProvider>
         </AuthProvider>
       </body>

@@ -7,7 +7,6 @@ import { TodayScheduleWidget } from "@/components/dashboard/TodayScheduleWidget"
 import { CardGridItem } from "@/components/cards/CardGridItem";
 import { CardThreadModal } from "@/components/cards/CardThreadModal";
 import { CreateCardModal } from "@/components/cards/CreateCardModal";
-import { BottomNav } from "@/components/layout/BottomNav";
 import { useAdmin } from "@/hooks/useAdmin";
 import { Search, Plus, X, Layers, Loader2, Sparkles, LogIn, Pin } from "lucide-react";
 
@@ -72,6 +71,7 @@ export default function HomePage() {
   const handleCardDeleted = (id: string) => {
     setCards((prev) => prev.filter((c) => c.id !== id));
     if (selectedCardId === id) setSelectedCardId(null);
+    window.dispatchEvent(new Event("card-counts-updated"));
   };
 
   return (
@@ -329,11 +329,11 @@ export default function HomePage() {
       <CreateCardModal
         isOpen={isCreateModalOpen}
         onClose={() => setIsCreateModalOpen(false)}
-        onCardCreated={() => fetchCards()}
+        onCardCreated={() => {
+          fetchCards();
+          window.dispatchEvent(new Event("card-counts-updated"));
+        }}
       />
-
-      {/* Mobile Bottom Navigation */}
-      <BottomNav onAddCardOpen={() => setIsCreateModalOpen(true)} />
     </div>
   );
 }

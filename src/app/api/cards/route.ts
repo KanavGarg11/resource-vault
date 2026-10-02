@@ -6,12 +6,48 @@ export async function GET(req: NextRequest) {
   try {
     const user = await getCurrentUser();
 
-    // If user is not authenticated, return empty cards (strict data privacy)
+    // If user is not authenticated, return empty cards and zero counts (strict data privacy)
     if (!user) {
-      return NextResponse.json({ cards: [] });
+      return NextResponse.json({
+        cards: [],
+        countsByTheme: {
+          study: 0,
+          "study-to-do": 0,
+          schedules: 0,
+          "to-do": 0,
+          personal: 0,
+        },
+      });
     }
 
     const { searchParams } = new URL(req.url);
+    const countsOnly = searchParams.get("countsOnly") === "true";
+
+    // Fast path: if only counts are requested, skip findMany and just return groupBy counts
+    if (countsOnly) {
+      const themeCounts = await db.card.groupBy({
+        by: ["theme"],
+        where: { userId: user.id },
+        _count: { _all: true },
+      });
+
+      const countsByTheme: Record<string, number> = {
+        study: 0,
+        "study-to-do": 0,
+        schedules: 0,
+        "to-do": 0,
+        personal: 0,
+      };
+
+      themeCounts.forEach((c) => {
+        if (countsByTheme[c.theme] !== undefined) {
+          countsByTheme[c.theme] = c._count._all;
+        }
+      });
+
+      return NextResponse.json({ countsByTheme });
+    }
+
     const theme = searchParams.get("theme");
     const search = searchParams.get("search");
 
@@ -52,21 +88,42 @@ export async function GET(req: NextRequest) {
       ? [{ updatedAt: "desc" }]
       : [{ isPinned: "desc" }, { updatedAt: "desc" }];
 
-    const cards = await db.card.findMany({
-      where,
-      orderBy,
-      include: {
-        items: {
-          orderBy: { createdAt: "desc" },
-          take: 6, // Preview latest items for card preview
+    const [cards, themeCounts] = await Promise.all([
+      db.card.findMany({
+        where,
+        orderBy,
+        include: {
+          items: {
+            orderBy: { createdAt: "desc" },
+            take: 6, // Preview latest items for card preview
+          },
+          _count: {
+            select: { items: true },
+          },
         },
-        _count: {
-          select: { items: true },
-        },
-      },
+      }),
+      db.card.groupBy({
+        by: ["theme"],
+        where: { userId: user.id },
+        _count: { _all: true },
+      }),
+    ]);
+
+    const countsByTheme: Record<string, number> = {
+      study: 0,
+      "study-to-do": 0,
+      schedules: 0,
+      "to-do": 0,
+      personal: 0,
+    };
+
+    themeCounts.forEach((c) => {
+      if (countsByTheme[c.theme] !== undefined) {
+        countsByTheme[c.theme] = c._count._all;
+      }
     });
 
-    return NextResponse.json({ cards });
+    return NextResponse.json({ cards, countsByTheme });
   } catch (error: any) {
     console.error("Error fetching cards:", error);
     return NextResponse.json(

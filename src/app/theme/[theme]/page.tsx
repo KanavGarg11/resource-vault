@@ -7,7 +7,6 @@ import { Card, CardTheme, THEME_CONFIG } from "@/lib/types";
 import { CardGridItem } from "@/components/cards/CardGridItem";
 import { CardThreadModal } from "@/components/cards/CardThreadModal";
 import { CreateCardModal } from "@/components/cards/CreateCardModal";
-import { BottomNav } from "@/components/layout/BottomNav";
 import { useAdmin } from "@/hooks/useAdmin";
 import {
   BookOpen,
@@ -123,6 +122,7 @@ export default function ThemePage() {
   const handleCardDeleted = (id: string) => {
     setCards((prev) => prev.filter((c) => c.id !== id));
     if (selectedCardId === id) setSelectedCardId(null);
+    window.dispatchEvent(new Event("card-counts-updated"));
   };
 
   return (
@@ -251,11 +251,11 @@ export default function ThemePage() {
         isOpen={isCreateModalOpen}
         defaultTheme={theme}
         onClose={() => setIsCreateModalOpen(false)}
-        onCardCreated={() => fetchThemeCards()}
+        onCardCreated={() => {
+          fetchThemeCards();
+          window.dispatchEvent(new Event("card-counts-updated"));
+        }}
       />
-
-      {/* Mobile Bottom Navigation */}
-      <BottomNav onAddCardOpen={() => setIsCreateModalOpen(true)} />
     </div>
   );
 }

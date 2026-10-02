@@ -128,6 +128,7 @@ export function CreateCardModal({
         setInitialText("");
         setFile(null);
         onCardCreated();
+        window.dispatchEvent(new Event("card-counts-updated"));
         onClose();
       } else {
         const data = await res.json();

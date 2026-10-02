@@ -92,6 +92,7 @@ export function CardGridItem({ card, onClick, onDelete, onPinToggle }: CardGridI
         });
         if (res.ok) {
           onDelete(card.id);
+          window.dispatchEvent(new Event("card-counts-updated"));
         } else {
           const data = await res.json().catch(() => ({}));
           alert(data.error || "Failed to delete card");

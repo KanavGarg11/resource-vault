@@ -16,20 +16,22 @@ import {
   Download,
 } from "lucide-react";
 import { usePwa } from "@/components/providers/PwaProvider";
+import { useCardCounts } from "@/components/providers/CardCountsProvider";
 
 const THEME_NAV_ITEMS = [
-  { label: "Dashboard", href: "/", icon: Compass },
-  { label: "Study", href: "/theme/study", icon: BookOpen },
-  { label: "Study To-Do", href: "/theme/study-to-do", icon: Clock },
-  { label: "Schedules", href: "/theme/schedules", icon: CalendarDays },
-  { label: "To-Do", href: "/theme/to-do", icon: CheckSquare },
-  { label: "Personal", href: "/theme/personal", icon: Sparkles },
+  { label: "Dashboard", href: "/", icon: Compass, themeKey: null },
+  { label: "Study", href: "/theme/study", icon: BookOpen, themeKey: "study" },
+  { label: "Study To-Do", href: "/theme/study-to-do", icon: Clock, themeKey: "study-to-do" },
+  { label: "Schedules", href: "/theme/schedules", icon: CalendarDays, themeKey: "schedules" },
+  { label: "To-Do", href: "/theme/to-do", icon: CheckSquare, themeKey: "to-do" },
+  { label: "Personal", href: "/theme/personal", icon: Sparkles, themeKey: "personal" },
 ];
 
 export function Navbar() {
   const pathname = usePathname();
   const { user, logout } = useAdmin();
   const { isInstallable, isInstalled, promptInstall } = usePwa();
+  const { counts } = useCardCounts();
 
   return (
     <header className="sticky top-0 z-40 w-full glass-nav border-b border-slate-200/80 dark:border-slate-800/80">
@@ -54,6 +56,8 @@ export function Navbar() {
           {THEME_NAV_ITEMS.map((item) => {
             const Icon = item.icon;
             const isActive = pathname === item.href;
+            const count = item.themeKey ? counts[item.themeKey] : undefined;
+
             return (
               <Link
                 key={item.href}
@@ -66,6 +70,19 @@ export function Navbar() {
               >
                 <Icon className="w-3.5 h-3.5" />
                 <span>{item.label}</span>
+                {count !== undefined && (
+                  <span
+                    className={`ml-1 px-1.5 py-0.5 rounded-full text-[10px] font-extrabold leading-none transition-colors ${
+                      isActive
+                        ? "bg-white/25 text-white"
+                        : count > 0
+                        ? "bg-indigo-100 dark:bg-indigo-950/80 text-indigo-700 dark:text-indigo-300 border border-indigo-200/50 dark:border-indigo-800/50"
+                        : "bg-slate-200/70 dark:bg-slate-800 text-slate-500 dark:text-slate-400"
+                    }`}
+                  >
+                    {count}
+                  </span>
+                )}
               </Link>
             );
           })}

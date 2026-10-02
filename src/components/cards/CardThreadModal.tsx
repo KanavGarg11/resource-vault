@@ -256,6 +256,7 @@ export function CardThreadModal({
       });
       if (res.ok) {
         if (onCardDeleted) onCardDeleted(cardId);
+        window.dispatchEvent(new Event("card-counts-updated"));
         onClose();
       } else {
         const data = await res.json().catch(() => ({}));
