@@ -24,6 +24,7 @@ import {
   Lock,
   Share2,
   Pin,
+  WifiOff,
 } from "lucide-react";
 import { format, formatDistanceToNow } from "date-fns";
 import { compressImageIfNeeded } from "@/lib/compressImage";
@@ -69,9 +70,52 @@ export function CardThreadModal({
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
   const [editingText, setEditingText] = useState("");
   const [savingEdit, setSavingEdit] = useState(false);
+  const [isOffline, setIsOffline] = useState(
+    typeof navigator !== "undefined" ? !navigator.onLine : false
+  );
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    const handleOff = () => setIsOffline(true);
+    const handleOn = () => setIsOffline(false);
+    window.addEventListener("offline", handleOff);
+    window.addEventListener("online", handleOn);
+    return () => {
+      window.removeEventListener("offline", handleOff);
+      window.removeEventListener("online", handleOn);
+    };
+  }, []);
+
+  // Restore saved input draft for this card
+  useEffect(() => {
+    if (cardId) {
+      try {
+        const savedDraft = localStorage.getItem(`lifevault_thread_draft_${cardId}`);
+        if (savedDraft) {
+          setInputText(savedDraft);
+        }
+      } catch {
+        // ignore
+      }
+    }
+  }, [cardId]);
+
+  const handleInputChange = (val: string) => {
+    setInputText(val);
+    if (cardId) {
+      try {
+        if (val.trim()) {
+          localStorage.setItem(`lifevault_thread_draft_${cardId}`, val);
+        } else {
+          localStorage.removeItem(`lifevault_thread_draft_${cardId}`);
+        }
+      } catch {
+        // ignore
+      }
+    }
+  };
 
   const fetchCard = async (silent = false) => {
     if (!cardId) return;
@@ -134,6 +178,16 @@ export function CardThreadModal({
 
     if (!isAdmin) {
       openPinModal();
+      return;
+    }
+
+    if (typeof navigator !== "undefined" && !navigator.onLine) {
+      alert("You are currently offline. Your text is safely kept in the input box and won't be lost. Tap send once back online.");
+      return;
+    }
+
+    if (attachedFile && typeof navigator !== "undefined" && !navigator.onLine) {
+      alert("File uploads require an active internet connection. Please reconnect to upload files.");
       return;
     }
 
@@ -219,6 +273,13 @@ export function CardThreadModal({
       if (res.ok) {
         setInputText("");
         setAttachedFile(null);
+        if (cardId) {
+          try {
+            localStorage.removeItem(`lifevault_thread_draft_${cardId}`);
+          } catch {
+            // ignore
+          }
+        }
         await fetchCard();
         onCardUpdated();
       } else {
@@ -234,7 +295,12 @@ export function CardThreadModal({
   };
 
   const handleDeleteItem = async (itemId: string) => {
-    if (!isAdmin || !confirm("Delete this message?")) return;
+    if (!isAdmin) return;
+    if (typeof navigator !== "undefined" && !navigator.onLine) {
+      alert("Cannot delete items while offline. Please reconnect to sync deletions.");
+      return;
+    }
+    if (!confirm("Delete this message?")) return;
     try {
       const res = await fetch(`/api/cards/${cardId}/items?itemId=${itemId}`, {
         method: "DELETE",
@@ -249,7 +315,12 @@ export function CardThreadModal({
   };
 
   const handleDeleteCard = async () => {
-    if (!isAdmin || !confirm(`Delete entire card "${card?.title}"?`)) return;
+    if (!isAdmin) return;
+    if (typeof navigator !== "undefined" && !navigator.onLine) {
+      alert("Cannot delete card while offline. Please reconnect to sync deletions.");
+      return;
+    }
+    if (!confirm(`Delete entire card "${card?.title}"?`)) return;
     try {
       const res = await fetch(`/api/cards/${cardId}`, {
         method: "DELETE",
@@ -286,6 +357,10 @@ export function CardThreadModal({
 
   const handleSaveEdit = async (itemId: string) => {
     if (!isAdmin) return;
+    if (typeof navigator !== "undefined" && !navigator.onLine) {
+      alert("Cannot save edits while offline. Please reconnect.");
+      return;
+    }
     setSavingEdit(true);
     try {
       const res = await fetch(`/api/cards/${cardId}/items`, {
@@ -733,6 +808,16 @@ export function CardThreadModal({
             </div>
           ) : (
             <form onSubmit={handleSendMessage} className="space-y-2">
+              {/* Inline Offline Warning & Draft Notice */}
+              {isOffline && (
+                <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-amber-50 dark:bg-amber-950/60 border border-amber-200 dark:border-amber-800/80 text-amber-800 dark:text-amber-200 text-xs animate-in fade-in">
+                  <WifiOff className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                  <p className="min-w-0 text-[11px]">
+                    <strong className="font-bold">Offline:</strong> Your draft is safely saved here and won&apos;t be lost. Tap send once reconnected.
+                  </p>
+                </div>
+              )}
+
               {/* Attached file chip if selected */}
               {attachedFile && (
                 <div className="flex items-center justify-between bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200 dark:border-indigo-800/80 rounded-xl px-3 py-1.5 text-xs">
@@ -760,6 +845,7 @@ export function CardThreadModal({
                 <input
                   ref={fileInputRef}
                   type="file"
+                  disabled={isOffline}
                   onChange={(e) => {
                     if (e.target.files && e.target.files[0]) {
                       setAttachedFile(e.target.files[0]);
@@ -770,9 +856,20 @@ export function CardThreadModal({
 
                 <button
                   type="button"
-                  onClick={() => fileInputRef.current?.click()}
-                  className="p-2.5 rounded-2xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 hover:text-indigo-600 transition-colors"
-                  title="Attach file, image, or PDF"
+                  disabled={isOffline}
+                  onClick={() => {
+                    if (isOffline) {
+                      alert("File uploads require an active internet connection.");
+                      return;
+                    }
+                    fileInputRef.current?.click();
+                  }}
+                  className={`p-2.5 rounded-2xl transition-colors ${
+                    isOffline
+                      ? "opacity-50 cursor-not-allowed bg-slate-100 dark:bg-slate-800 text-slate-400"
+                      : "bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 hover:text-indigo-600"
+                  }`}
+                  title={isOffline ? "File uploads require an active internet connection" : "Attach file, image, or PDF"}
                 >
                   <Paperclip className="w-4 h-4" />
                 </button>
@@ -780,19 +877,27 @@ export function CardThreadModal({
                 <input
                   type="text"
                   value={inputText}
-                  onChange={(e) => setInputText(e.target.value)}
+                  onChange={(e) => handleInputChange(e.target.value)}
                   placeholder="Type a message, note, or paste a link..."
                   className="flex-1 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl px-4 py-2.5 text-xs sm:text-sm text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
                 />
 
                 <button
                   type="submit"
-                  disabled={sending || compressing || (!inputText.trim() && !attachedFile)}
-                  className="p-2.5 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white disabled:opacity-40 disabled:cursor-not-allowed shadow-md shadow-indigo-500/20 transition-all active:scale-95"
-                  title={compressing ? "Optimizing image..." : "Send to Card"}
+                  disabled={isOffline || sending || compressing || (!inputText.trim() && !attachedFile)}
+                  className="p-2.5 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white disabled:opacity-40 disabled:cursor-not-allowed shadow-md shadow-indigo-500/20 transition-all active:scale-95 shrink-0"
+                  title={
+                    isOffline
+                      ? "You are offline. Reconnect to send."
+                      : compressing
+                      ? "Optimizing image..."
+                      : "Send to Card"
+                  }
                 >
                   {compressing || sending ? (
                     <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : isOffline ? (
+                    <WifiOff className="w-4 h-4 text-white/80" />
                   ) : (
                     <Send className="w-4 h-4" />
                   )}

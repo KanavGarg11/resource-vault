@@ -58,6 +58,10 @@ export function CardGridItem({ card, onClick, onDelete, onPinToggle }: CardGridI
   const handleTogglePin = async (e: React.MouseEvent) => {
     e.stopPropagation();
     if (!isAdmin || togglingPin) return;
+    if (typeof navigator !== "undefined" && !navigator.onLine) {
+      alert("Cannot update pin status while offline. Please reconnect.");
+      return;
+    }
     setTogglingPin(true);
     const nextPinned = !isPinned;
     try {
@@ -84,6 +88,10 @@ export function CardGridItem({ card, onClick, onDelete, onPinToggle }: CardGridI
   const handleDelete = async (e: React.MouseEvent) => {
     e.stopPropagation();
     if (!isAdmin || !onDelete || isDeleting) return;
+    if (typeof navigator !== "undefined" && !navigator.onLine) {
+      alert("Cannot delete cards while offline. Please reconnect to sync deletions.");
+      return;
+    }
     if (confirm(`Delete card "${card.title}" and all its contents?`)) {
       setIsDeleting(true);
       try {

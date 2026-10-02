@@ -148,6 +148,11 @@ export function TodayScheduleWidget() {
     e.preventDefault();
     if (!isAdmin) return;
 
+    if (typeof navigator !== "undefined" && !navigator.onLine) {
+      alert("Cannot add classes while offline. Please reconnect.");
+      return;
+    }
+
     if (!formSubject.trim() || !formStartTime.trim() || !formEndTime.trim()) {
       alert("Please fill in Subject, Start Time, and End Time");
       return;
@@ -187,6 +192,10 @@ export function TodayScheduleWidget() {
 
   const handleDeleteEntry = async (id: string, subject: string) => {
     if (!isAdmin) return;
+    if (typeof navigator !== "undefined" && !navigator.onLine) {
+      alert("Cannot delete classes while offline. Please reconnect.");
+      return;
+    }
     if (!confirm(`Delete "${subject}" from ${activeDay}'s schedule?`)) return;
 
     try {

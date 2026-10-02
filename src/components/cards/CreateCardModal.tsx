@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAdmin } from "@/hooks/useAdmin";
 import { CardTheme, THEME_CONFIG } from "@/lib/types";
 import {
@@ -14,6 +14,7 @@ import {
   Paperclip,
   Loader2,
   UploadCloud,
+  WifiOff,
 } from "lucide-react";
 import { compressImageIfNeeded } from "@/lib/compressImage";
 
@@ -38,6 +39,52 @@ export function CreateCardModal({
   const [file, setFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
   const [compressing, setCompressing] = useState(false);
+  const [isOffline, setIsOffline] = useState(
+    typeof navigator !== "undefined" ? !navigator.onLine : false
+  );
+
+  useEffect(() => {
+    const handleOff = () => setIsOffline(true);
+    const handleOn = () => setIsOffline(false);
+    window.addEventListener("offline", handleOff);
+    window.addEventListener("online", handleOn);
+    return () => {
+      window.removeEventListener("offline", handleOff);
+      window.removeEventListener("online", handleOn);
+    };
+  }, []);
+
+  // Restore saved draft on open
+  useEffect(() => {
+    if (isOpen) {
+      try {
+        const saved = localStorage.getItem("lifevault_create_card_draft");
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (parsed.title) setTitle(parsed.title);
+          if (parsed.initialText) setInitialText(parsed.initialText);
+          if (parsed.theme) setTheme(parsed.theme);
+        }
+      } catch {
+        // ignore
+      }
+    }
+  }, [isOpen]);
+
+  const updateDraft = (newTitle: string, newText: string, newTheme: CardTheme) => {
+    try {
+      if (newTitle.trim() || newText.trim()) {
+        localStorage.setItem(
+          "lifevault_create_card_draft",
+          JSON.stringify({ title: newTitle, initialText: newText, theme: newTheme })
+        );
+      } else {
+        localStorage.removeItem("lifevault_create_card_draft");
+      }
+    } catch {
+      // ignore
+    }
+  };
 
   if (!isOpen) return null;
 
@@ -46,6 +93,16 @@ export function CreateCardModal({
 
     if (!isAdmin) {
       openPinModal();
+      return;
+    }
+
+    if (typeof navigator !== "undefined" && !navigator.onLine) {
+      alert("You are currently offline. Your card title and notes are safely preserved in draft. Tap 'Create Card' once reconnected.");
+      return;
+    }
+
+    if (file && typeof navigator !== "undefined" && !navigator.onLine) {
+      alert("File uploads require an active internet connection. Please reconnect to upload files.");
       return;
     }
 
@@ -127,6 +184,11 @@ export function CreateCardModal({
         setTitle("");
         setInitialText("");
         setFile(null);
+        try {
+          localStorage.removeItem("lifevault_create_card_draft");
+        } catch {
+          // ignore
+        }
         onCardCreated();
         window.dispatchEvent(new Event("card-counts-updated"));
         onClose();
@@ -177,6 +239,19 @@ export function CreateCardModal({
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Offline Warning Banner */}
+          {isOffline && (
+            <div className="flex items-center gap-2.5 p-3 rounded-2xl bg-amber-50 dark:bg-amber-950/60 border border-amber-200 dark:border-amber-800/80 text-amber-800 dark:text-amber-200 text-xs animate-in fade-in">
+              <WifiOff className="w-4 h-4 text-amber-500 shrink-0" />
+              <div className="min-w-0">
+                <p className="font-bold">You are currently offline</p>
+                <p className="text-[11px] text-amber-700 dark:text-amber-300">
+                  Your title and notes are safely saved in draft. You can create this card once reconnected.
+                </p>
+              </div>
+            </div>
+          )}
+
           {/* Card Title */}
           <div>
             <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1.5">
@@ -187,7 +262,10 @@ export function CreateCardModal({
               required
               autoFocus
               value={title}
-              onChange={(e) => setTitle(e.target.value)}
+              onChange={(e) => {
+                setTitle(e.target.value);
+                updateDraft(e.target.value, initialText, theme);
+              }}
               placeholder="e.g. Operating Systems Notes, Sports Shoes Wishlist, Mid-Term Exam Dates"
               className="w-full bg-slate-50 dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-sm font-semibold text-slate-900 dark:text-white placeholder:font-normal placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
             />
@@ -206,7 +284,10 @@ export function CreateCardModal({
                   <button
                     key={t.id}
                     type="button"
-                    onClick={() => setTheme(t.id)}
+                    onClick={() => {
+                      setTheme(t.id);
+                      updateDraft(title, initialText, t.id);
+                    }}
                     className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold border transition-all ${
                       isSel
                         ? "bg-indigo-600 text-white border-indigo-600 shadow-sm"
@@ -229,7 +310,10 @@ export function CreateCardModal({
             <textarea
               rows={2}
               value={initialText}
-              onChange={(e) => setInitialText(e.target.value)}
+              onChange={(e) => {
+                setInitialText(e.target.value);
+                updateDraft(title, e.target.value, theme);
+              }}
               placeholder="Type your first note, paste a link, or thoughts for this card..."
               className="w-full bg-slate-50 dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2 text-xs text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 resize-none"
             />
@@ -240,6 +324,7 @@ export function CreateCardModal({
             <input
               id="create-card-file"
               type="file"
+              disabled={isOffline}
               onChange={(e) => {
                 if (e.target.files && e.target.files[0]) {
                   setFile(e.target.files[0]);
@@ -266,6 +351,11 @@ export function CreateCardModal({
                   <X className="w-3.5 h-3.5" />
                 </button>
               </div>
+            ) : isOffline ? (
+              <div className="flex items-center justify-center gap-2 py-2 px-3 rounded-xl border border-dashed border-slate-200 dark:border-slate-800 text-xs text-slate-400 bg-slate-50 dark:bg-slate-800/40 opacity-70 cursor-not-allowed">
+                <WifiOff className="w-3.5 h-3.5" />
+                <span>File uploads require internet connection (Disabled offline)</span>
+              </div>
             ) : (
               <label
                 htmlFor="create-card-file"
@@ -280,7 +370,7 @@ export function CreateCardModal({
           {/* Submit Button */}
           <button
             type="submit"
-            disabled={loading || compressing || !title.trim()}
+            disabled={isOffline || loading || compressing || !title.trim()}
             className="w-full py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-md shadow-indigo-500/25 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {compressing ? (
@@ -292,6 +382,11 @@ export function CreateCardModal({
               <>
                 <Loader2 className="w-4 h-4 animate-spin" />
                 <span>Creating Card...</span>
+              </>
+            ) : isOffline ? (
+              <>
+                <WifiOff className="w-4 h-4 text-white/80" />
+                <span>Offline (Saved in Draft)</span>
               </>
             ) : (
               <>
