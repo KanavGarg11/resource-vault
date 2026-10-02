@@ -15,8 +15,6 @@ import {
   Sparkles,
   Check,
   ArrowRight,
-  ZoomIn,
-  ZoomOut,
 } from "lucide-react";
 
 interface WeeklyScheduleModalProps {
@@ -53,12 +51,6 @@ export function WeeklyScheduleModal({ isOpen, onClose }: WeeklyScheduleModalProp
   const [exporting, setExporting] = useState(false);
   const [downloadSuccess, setDownloadSuccess] = useState(false);
 
-  // Auto-fit to screen state: default true so whole timetable is on screen with zero dragging
-  const [isFitMode, setIsFitMode] = useState(true);
-  const [scale, setScale] = useState(1);
-  const [canvasDimensions, setCanvasDimensions] = useState({ width: 780, height: 600 });
-
-  const containerRef = useRef<HTMLDivElement>(null);
   const exportRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -70,6 +62,7 @@ export function WeeklyScheduleModal({ isOpen, onClose }: WeeklyScheduleModalProp
   const fetchAllEntries = async () => {
     setLoading(true);
     try {
+      // Calling /api/timetable with no day parameter returns all classes for the user
       const res = await fetch("/api/timetable");
       if (res.ok) {
         const data = await res.json();
@@ -81,6 +74,8 @@ export function WeeklyScheduleModal({ isOpen, onClose }: WeeklyScheduleModalProp
       setLoading(false);
     }
   };
+
+  if (!isOpen) return null;
 
   // Determine active days list (include Sunday if user has Sunday classes)
   const allDays = entries.some((e) => e.dayOfWeek === "Sunday")
@@ -99,7 +94,7 @@ export function WeeklyScheduleModal({ isOpen, onClose }: WeeklyScheduleModalProp
     }
   });
 
-  // Sort entries within each day chronologically
+  // Sort entries within each day by start time
   allDays.forEach((day) => {
     entriesByDay[day].sort((a, b) => {
       const getMinutes = (t: string) => {
@@ -118,49 +113,6 @@ export function WeeklyScheduleModal({ isOpen, onClose }: WeeklyScheduleModalProp
 
   const totalClasses = entries.length;
 
-  // Auto-calculate scale whenever container or content changes so whole timetable fits on screen
-  useEffect(() => {
-    if (!isOpen || loading || entries.length === 0) return;
-
-    const container = containerRef.current;
-    const canvas = exportRef.current;
-    if (!container || !canvas) return;
-
-    const updateFitScale = () => {
-      const pad = window.innerWidth < 640 ? 16 : 32;
-      const availWidth = container.clientWidth - pad;
-
-      // Natural unscaled layout dimensions
-      const naturalW = canvas.scrollWidth || 760;
-      const naturalH = canvas.scrollHeight || 580;
-
-      setCanvasDimensions({ width: naturalW, height: naturalH });
-
-      if (isFitMode && availWidth > 0 && naturalW > 0) {
-        // Automatically scale to fit the screen width with zero horizontal dragging
-        const newScale = Math.min(1, availWidth / naturalW);
-        setScale(newScale);
-      } else {
-        setScale(1);
-      }
-    };
-
-    // Execute after brief delay to allow DOM transition to settle
-    const timer = setTimeout(updateFitScale, 60);
-
-    const observer = new ResizeObserver(() => {
-      updateFitScale();
-    });
-    observer.observe(container);
-
-    return () => {
-      clearTimeout(timer);
-      observer.disconnect();
-    };
-  }, [isOpen, loading, entries, isFitMode]);
-
-  if (!isOpen) return null;
-
   const handleExportPng = async () => {
     if (!exportRef.current) return;
     setExporting(true);
@@ -168,18 +120,16 @@ export function WeeklyScheduleModal({ isOpen, onClose }: WeeklyScheduleModalProp
       const node = exportRef.current;
       const isDark = document.documentElement.classList.contains("dark");
 
+      // Small pause to allow layout rendering to settle
       await new Promise((resolve) => setTimeout(resolve, 80));
 
-      const exportWidth = canvasDimensions.width || node.scrollWidth;
-      const exportHeight = canvasDimensions.height || node.scrollHeight;
-
-      // Capture full unscaled canvas at 2x crisp retina resolution
+      // Capture full width & height unclipped at 2x resolution
       const dataUrl = await toPng(node, {
         pixelRatio: 2,
         cacheBust: true,
         backgroundColor: isDark ? "#0f172a" : "#ffffff",
-        width: exportWidth,
-        height: exportHeight,
+        width: node.scrollWidth,
+        height: node.scrollHeight,
         style: {
           transform: "none",
           margin: "0",
@@ -277,13 +227,17 @@ export function WeeklyScheduleModal({ isOpen, onClose }: WeeklyScheduleModalProp
           </div>
         </div>
 
-        {/* Scrollable Container (Fitted on screen with no dragging required) */}
-        <div
-          ref={containerRef}
-          className={`flex-1 ${
-            isFitMode && scale < 1 ? "overflow-x-hidden overflow-y-auto" : "overflow-auto"
-          } p-2 sm:p-6 bg-slate-100/60 dark:bg-slate-950/60 flex flex-col items-center justify-start print:overflow-visible print:p-0 print:bg-white`}
-        >
+        {/* Mobile Horizontal Scroll Hint */}
+        <div className="md:hidden px-4 py-1.5 bg-indigo-50/70 dark:bg-indigo-950/40 border-b border-indigo-100/60 dark:border-indigo-900/40 flex items-center justify-between text-[11px] text-indigo-700 dark:text-indigo-300 shrink-0 print:hidden">
+          <span className="flex items-center gap-1.5 font-medium">
+            <Sparkles className="w-3 h-3 text-indigo-500" />
+            Swipe sideways to view full day schedule
+          </span>
+          <span className="text-[10px] text-indigo-500/80 font-semibold uppercase">Full Grid ➔</span>
+        </div>
+
+        {/* Scrollable Printable/Exportable Canvas Container */}
+        <div className="flex-1 overflow-x-auto overflow-y-auto p-3 sm:p-6 bg-slate-100/60 dark:bg-slate-950/60 print:overflow-visible print:p-0 print:bg-white">
           {loading ? (
             <div className="h-full flex flex-col items-center justify-center text-slate-400 gap-3 min-h-[300px]">
               <Loader2 className="w-8 h-8 animate-spin text-indigo-600" />
@@ -302,175 +256,133 @@ export function WeeklyScheduleModal({ isOpen, onClose }: WeeklyScheduleModalProp
               </p>
             </div>
           ) : (
-            <div className="w-full flex flex-col items-center">
-              {/* Scaling Wrapper: Matches visual dimensions so the whole timetable fits on the screen at once */}
+            <div className="w-max min-w-full flex justify-start md:justify-center">
+              {/* THE EXPORT CANVAS (Unified horizontal structure across phone, laptop, and PNG export) */}
               <div
-                style={{
-                  width:
-                    isFitMode && scale < 1
-                      ? `${Math.round(canvasDimensions.width * scale)}px`
-                      : "auto",
-                  height:
-                    isFitMode && scale < 1
-                      ? `${Math.round(canvasDimensions.height * scale)}px`
-                      : "auto",
-                  maxWidth: "100%",
-                }}
-                className="transition-all duration-150 flex justify-center"
+                ref={exportRef}
+                className="w-max min-w-[820px] md:min-w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-5 sm:p-7 shadow-xl transition-all print:border-none print:shadow-none print:p-2"
               >
-                {/* THE EXPORT CANVAS (Unified horizontal structure across phone, laptop, and PNG export) */}
-                <div
-                  ref={exportRef}
-                  style={{
-                    transform: isFitMode && scale < 1 ? `scale(${scale})` : undefined,
-                    transformOrigin: "top left",
-                    width: isFitMode && scale < 1 ? `${canvasDimensions.width}px` : undefined,
-                  }}
-                  className="w-max min-w-[720px] md:min-w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-4 sm:p-7 shadow-xl print:border-none print:shadow-none print:p-2"
-                >
-                  {/* Schedule Header Brand Banner */}
-                  <div className="flex items-center justify-between pb-4 sm:pb-5 mb-4 sm:mb-5 border-b border-slate-200/80 dark:border-slate-800">
-                    <div className="flex items-center gap-2.5 sm:gap-3">
-                      <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-600 text-white flex items-center justify-center shadow-md shadow-indigo-500/20 shrink-0">
-                        <Sparkles className="w-4 h-4 sm:w-5 sm:h-5" />
-                      </div>
-                      <div>
-                        <h2 className="text-base sm:text-xl font-black text-slate-900 dark:text-white tracking-tight">
-                          LifeVault Schedule
-                        </h2>
-                        <p className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-400">
-                          Weekly Academic Timetable
-                        </p>
-                      </div>
+                {/* Schedule Header Brand Banner */}
+                <div className="flex items-center justify-between pb-5 mb-5 border-b border-slate-200/80 dark:border-slate-800">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-600 text-white flex items-center justify-center shadow-md shadow-indigo-500/20">
+                      <Sparkles className="w-5 h-5" />
                     </div>
-
-                    <div className="text-right">
-                      <span className="text-[10px] sm:text-xs font-semibold px-2.5 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
-                        {totalClasses} {totalClasses === 1 ? "Class" : "Classes"} Scheduled
-                      </span>
-                      <p className="text-[10px] text-slate-400 mt-1">
-                        {new Date().toLocaleDateString(undefined, {
-                          weekday: "short",
-                          month: "short",
-                          day: "numeric",
-                          year: "numeric",
-                        })}
+                    <div>
+                      <h2 className="text-lg sm:text-xl font-black text-slate-900 dark:text-white tracking-tight">
+                        LifeVault Schedule
+                      </h2>
+                      <p className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-400">
+                        Weekly Academic Timetable
                       </p>
                     </div>
                   </div>
 
-                  {/* Table Rows (Strict horizontal flow: Monday classes ->, Tuesday classes ->, etc.) */}
-                  <div className="space-y-2.5 sm:space-y-3">
-                    {allDays.map((day) => {
-                      const dayClasses = entriesByDay[day] || [];
-                      return (
-                        <div
-                          key={day}
-                          className="flex flex-row items-stretch gap-2.5 sm:gap-4 p-3 sm:p-4 rounded-2xl bg-slate-50/90 dark:bg-slate-800/40 border border-slate-200/80 dark:border-slate-700/60 shadow-xs print:bg-slate-50 print:border-slate-300 print:break-inside-avoid"
-                        >
-                          {/* Day Column (Left) with right indicator -> */}
-                          <div className="w-24 sm:w-36 shrink-0 flex flex-col justify-center pr-2.5 sm:pr-4 border-r-2 border-slate-200/80 dark:border-slate-700/60 print:border-slate-300">
-                            <div className="flex items-center justify-between">
-                              <span className="text-xs sm:text-sm font-extrabold uppercase tracking-wider text-slate-900 dark:text-white print:text-black">
-                                {day}
-                              </span>
-                              <ArrowRight className="w-3.5 h-3.5 text-indigo-500/70 dark:text-indigo-400/70 shrink-0" />
-                            </div>
-                            <span className="text-[10px] sm:text-[11px] font-semibold text-slate-400 dark:text-slate-500 print:text-slate-600 mt-0.5">
-                              {dayClasses.length} {dayClasses.length === 1 ? "class" : "classes"}
-                            </span>
-                          </div>
-
-                          {/* Classes Flow: Strictly Left to Right -> */}
-                          <div className="flex-1 flex flex-row items-stretch gap-2 sm:gap-3 overflow-visible">
-                            {dayClasses.length === 0 ? (
-                              <div className="h-full min-h-[68px] sm:min-h-[76px] w-full flex items-center px-4 rounded-xl border border-dashed border-slate-200 dark:border-slate-700/80 print:border-slate-300 text-xs text-slate-400 italic">
-                                No classes scheduled • Free day
-                              </div>
-                            ) : (
-                              dayClasses.map((item) => {
-                                const colorClass = getSubjectColorClass(item.subject);
-                                return (
-                                  <div
-                                    key={item.id}
-                                    className={`w-[175px] sm:w-[210px] shrink-0 p-2.5 sm:p-3.5 rounded-xl border border-slate-200/90 dark:border-slate-700/80 border-l-4 ${colorClass} bg-white dark:bg-slate-800/90 shadow-2xs flex flex-col justify-between print:border-slate-300 print:bg-white`}
-                                  >
-                                    <div>
-                                      <div className="flex items-start justify-between gap-1.5">
-                                        <p className="text-xs sm:text-[13px] font-extrabold text-slate-900 dark:text-white print:text-black leading-tight line-clamp-1">
-                                          {item.subject}
-                                        </p>
-                                        {item.code && (
-                                          <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-700/80 text-slate-600 dark:text-slate-300 uppercase shrink-0 font-semibold print:bg-slate-100 print:text-slate-800">
-                                            {item.code}
-                                          </span>
-                                        )}
-                                      </div>
-
-                                      <div className="flex items-center gap-1.5 text-[10px] sm:text-[11px] font-mono font-medium text-slate-500 dark:text-slate-400 print:text-slate-600 mt-1">
-                                        <Clock className="w-3 h-3 text-slate-400 shrink-0" />
-                                        <span>
-                                          {item.startTime} – {item.endTime}
-                                        </span>
-                                      </div>
-                                    </div>
-
-                                    {(item.room || item.professor) && (
-                                      <div className="flex items-center gap-2 text-[10px] text-slate-400 mt-2 pt-1.5 border-t border-slate-100 dark:border-slate-700/50 print:border-slate-200 flex-wrap">
-                                        {item.room && (
-                                          <span className="flex items-center gap-1 font-medium text-slate-600 dark:text-slate-300 print:text-slate-700">
-                                            <MapPin className="w-2.5 h-2.5 text-indigo-500" />
-                                            <span>{item.room}</span>
-                                          </span>
-                                        )}
-                                        {item.professor && (
-                                          <span className="flex items-center gap-1 text-slate-500 dark:text-slate-400 print:text-slate-600">
-                                            <User className="w-2.5 h-2.5 text-slate-400" />
-                                            <span className="truncate max-w-[90px]">{item.professor}</span>
-                                          </span>
-                                        )}
-                                      </div>
-                                    )}
-                                  </div>
-                                );
-                              })
-                            )}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-
-                  {/* Footer Brand watermark */}
-                  <div className="mt-5 sm:mt-6 pt-3 sm:pt-4 border-t border-slate-200/80 dark:border-slate-800 flex items-center justify-between text-[10px] sm:text-[11px] text-slate-400">
-                    <span className="font-semibold text-slate-600 dark:text-slate-400">
-                      LifeVault • Personal Resource Manager
+                  <div className="text-right">
+                    <span className="text-[10px] sm:text-xs font-semibold px-2.5 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
+                      {totalClasses} {totalClasses === 1 ? "Class" : "Classes"} Scheduled
                     </span>
-                    <span>Organized for Success</span>
+                    <p className="text-[10px] text-slate-400 mt-1">
+                      {new Date().toLocaleDateString(undefined, {
+                        weekday: "short",
+                        month: "short",
+                        day: "numeric",
+                        year: "numeric",
+                      })}
+                    </p>
                   </div>
                 </div>
-              </div>
 
-              {/* Optional Zoom / Fit Toggle Pill (shown only when canvas was scaled down on small screens) */}
-              {scale < 1 && (
-                <button
-                  onClick={() => setIsFitMode(!isFitMode)}
-                  className="mt-3 px-3.5 py-1.5 rounded-full bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700/80 border border-slate-200 dark:border-slate-700 text-[11px] font-semibold text-slate-700 dark:text-slate-300 shadow-sm flex items-center gap-1.5 transition-all active:scale-95 print:hidden"
-                  title="Toggle between fitted view and actual size"
-                >
-                  {isFitMode ? (
-                    <>
-                      <ZoomIn className="w-3.5 h-3.5 text-indigo-500" />
-                      <span>Fitted to screen • Tap to zoom in</span>
-                    </>
-                  ) : (
-                    <>
-                      <ZoomOut className="w-3.5 h-3.5 text-indigo-500" />
-                      <span>Zoomed in • Tap to fit screen</span>
-                    </>
-                  )}
-                </button>
-              )}
+                {/* Table Rows (Strict horizontal flow: Monday classes ->, Tuesday classes ->, etc.) */}
+                <div className="space-y-3">
+                  {allDays.map((day) => {
+                    const dayClasses = entriesByDay[day] || [];
+                    return (
+                      <div
+                        key={day}
+                        className="flex flex-row items-stretch gap-3 sm:gap-4 p-3.5 sm:p-4 rounded-2xl bg-slate-50/90 dark:bg-slate-800/40 border border-slate-200/80 dark:border-slate-700/60 shadow-xs print:bg-slate-50 print:border-slate-300 print:break-inside-avoid"
+                      >
+                        {/* Day Column (Left) with right indicator -> */}
+                        <div className="w-28 sm:w-36 shrink-0 flex flex-col justify-center pr-3 sm:pr-4 border-r-2 border-slate-200/80 dark:border-slate-700/60 print:border-slate-300">
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs sm:text-sm font-extrabold uppercase tracking-wider text-slate-900 dark:text-white print:text-black">
+                              {day}
+                            </span>
+                            <ArrowRight className="w-3.5 h-3.5 text-indigo-500/70 dark:text-indigo-400/70 shrink-0" />
+                          </div>
+                          <span className="text-[10px] sm:text-[11px] font-semibold text-slate-400 dark:text-slate-500 print:text-slate-600 mt-0.5">
+                            {dayClasses.length} {dayClasses.length === 1 ? "class" : "classes"}
+                          </span>
+                        </div>
+
+                        {/* Classes Flow: Strictly Left to Right -> */}
+                        <div className="flex-1 flex flex-row items-stretch gap-2.5 sm:gap-3 overflow-visible">
+                          {dayClasses.length === 0 ? (
+                            <div className="h-full min-h-[76px] w-full flex items-center px-4 rounded-xl border border-dashed border-slate-200 dark:border-slate-700/80 print:border-slate-300 text-xs text-slate-400 italic">
+                              No classes scheduled • Free day
+                            </div>
+                          ) : (
+                            dayClasses.map((item) => {
+                              const colorClass = getSubjectColorClass(item.subject);
+                              return (
+                                <div
+                                  key={item.id}
+                                  className={`w-[190px] sm:w-[215px] shrink-0 p-3 sm:p-3.5 rounded-xl border border-slate-200/90 dark:border-slate-700/80 border-l-4 ${colorClass} bg-white dark:bg-slate-800/90 shadow-2xs flex flex-col justify-between print:border-slate-300 print:bg-white`}
+                                >
+                                  <div>
+                                    <div className="flex items-start justify-between gap-1.5">
+                                      <p className="text-xs sm:text-[13px] font-extrabold text-slate-900 dark:text-white print:text-black leading-tight line-clamp-1">
+                                        {item.subject}
+                                      </p>
+                                      {item.code && (
+                                        <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-700/80 text-slate-600 dark:text-slate-300 uppercase shrink-0 font-semibold print:bg-slate-100 print:text-slate-800">
+                                          {item.code}
+                                        </span>
+                                      )}
+                                    </div>
+
+                                    <div className="flex items-center gap-1.5 text-[10px] sm:text-[11px] font-mono font-medium text-slate-500 dark:text-slate-400 print:text-slate-600 mt-1.5">
+                                      <Clock className="w-3 h-3 text-slate-400 shrink-0" />
+                                      <span>
+                                        {item.startTime} – {item.endTime}
+                                      </span>
+                                    </div>
+                                  </div>
+
+                                  {(item.room || item.professor) && (
+                                    <div className="flex items-center gap-2 text-[10px] text-slate-400 mt-2.5 pt-1.5 border-t border-slate-100 dark:border-slate-700/50 print:border-slate-200 flex-wrap">
+                                      {item.room && (
+                                        <span className="flex items-center gap-1 font-medium text-slate-600 dark:text-slate-300 print:text-slate-700">
+                                          <MapPin className="w-2.5 h-2.5 text-indigo-500" />
+                                          <span>{item.room}</span>
+                                        </span>
+                                      )}
+                                      {item.professor && (
+                                        <span className="flex items-center gap-1 text-slate-500 dark:text-slate-400 print:text-slate-600">
+                                          <User className="w-2.5 h-2.5 text-slate-400" />
+                                          <span className="truncate max-w-[95px]">{item.professor}</span>
+                                        </span>
+                                      )}
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            })
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Footer Brand watermark */}
+                <div className="mt-6 pt-4 border-t border-slate-200/80 dark:border-slate-800 flex items-center justify-between text-[10px] sm:text-[11px] text-slate-400">
+                  <span className="font-semibold text-slate-600 dark:text-slate-400">
+                    LifeVault • Personal Resource Manager
+                  </span>
+                  <span>Organized for Success</span>
+                </div>
+              </div>
             </div>
           )}
         </div>
