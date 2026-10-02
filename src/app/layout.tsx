@@ -6,6 +6,7 @@ import { PwaProvider } from "@/components/providers/PwaProvider";
 import { Navbar } from "@/components/layout/Navbar";
 import { BottomNav } from "@/components/layout/BottomNav";
 import { PwaInstallPrompt } from "@/components/ui/PwaInstallPrompt";
+import { OfflineNotification } from "@/components/ui/OfflineNotification";
 import { CardCountsProvider } from "@/components/providers/CardCountsProvider";
 
 export const metadata: Metadata = {
@@ -58,6 +59,7 @@ export default function RootLayout({
                   <main className="flex-1 pb-20 md:pb-12">{children}</main>
                   <BottomNav />
                 </div>
+                <OfflineNotification />
                 <PwaInstallPrompt />
               </PwaProvider>
             </CardCountsProvider>

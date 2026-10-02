@@ -1,6 +1,9 @@
-const CACHE_NAME = 'lifevault-v1';
+const CACHE_NAME = 'lifevault-v2';
 const STATIC_ASSETS = [
   '/',
+  '/offline',
+  '/offline.html',
+  '/manifest.webmanifest',
   '/manifest.json',
   '/icons/icon-192x192.png',
   '/icons/icon-512x512.png',
@@ -11,7 +14,9 @@ const STATIC_ASSETS = [
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(STATIC_ASSETS);
+      return cache.addAll(STATIC_ASSETS).catch((err) => {
+        console.warn('Some static assets failed to pre-cache:', err);
+      });
     })
   );
   self.skipWaiting();
@@ -40,15 +45,57 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Network-first strategy with cache fallback for page navigation and static files
+  // 1. Navigation requests (Opening the app or reloading a page while offline)
+  if (event.request.mode === 'navigate') {
+    event.respondWith(
+      fetch(event.request)
+        .then((response) => {
+          // If successful, cache the page for offline viewing
+          if (response.status === 200) {
+            const copy = response.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy));
+          }
+          return response;
+        })
+        .catch(async () => {
+          // Network failed! Check if this exact page was previously cached
+          const cachedPage = await caches.match(event.request);
+          if (cachedPage) {
+            return cachedPage;
+          }
+
+          // Otherwise serve the special offline screen
+          const offlinePage = await caches.match('/offline');
+          if (offlinePage) {
+            return offlinePage;
+          }
+
+          const offlineHtml = await caches.match('/offline.html');
+          if (offlineHtml) {
+            return offlineHtml;
+          }
+
+          // Ultimate fallback to cached root
+          return caches.match('/');
+        })
+    );
+    return;
+  }
+
+  // 2. Network-first strategy with cache fallback for static files and assets
   event.respondWith(
     fetch(event.request)
       .then((response) => {
-        // Cache successful GET responses for static files
         if (
           event.request.method === 'GET' &&
           response.status === 200 &&
-          (url.pathname.startsWith('/_next/static/') || url.pathname.startsWith('/icons/'))
+          (url.pathname.startsWith('/_next/static/') ||
+            url.pathname.startsWith('/icons/') ||
+            url.pathname.endsWith('.png') ||
+            url.pathname.endsWith('.jpg') ||
+            url.pathname.endsWith('.svg') ||
+            url.pathname.endsWith('.css') ||
+            url.pathname.endsWith('.js'))
         ) {
           const responseClone = response.clone();
           caches.open(CACHE_NAME).then((cache) => {
